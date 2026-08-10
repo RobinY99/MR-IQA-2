@@ -23,11 +23,12 @@ multimodal aligner remain frozen.
 
 ## Editor
 
-The Editor is a separately installed, frozen
-[`black-forest-labs/FLUX.2-klein-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/e7b7dc27f91deacad38e78976d1f2b499d76a294)
-service at revision `e7b7dc27f91deacad38e78976d1f2b499d76a294`. It consumes
-only `reasoning.solution`. Obtain its Apache-2.0 weights from the upstream
-repository. Full evaluation completes all edits before starting the Judge.
+The Editor is the frozen `editor/` model from
+[`RobinY99/MR-IQA-2`](https://huggingface.co/RobinY99/MR-IQA-2), copied from
+`black-forest-labs/FLUX.2-klein-4B` revision
+`e7b7dc27f91deacad38e78976d1f2b499d76a294`. It consumes only
+`reasoning.solution`. Full evaluation completes all edits before starting the
+Judge.
 
 ## Judge
 

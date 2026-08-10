@@ -1,5 +1,5 @@
 {
-  "actor-field-e5-step1455": "SET_LOCAL_CHECKPOINT_DIRECTORY",
-  "source-e5-judge-step725": "SET_LOCAL_CHECKPOINT_DIRECTORY",
-  "actor-completion-e5-step1455": "SET_LOCAL_CHECKPOINT_DIRECTORY"
+  "actor-field-e5-step1455": "SET_LOCAL_MASK_E5_ACTOR_DIRECTORY",
+  "source-e5-judge-step725": "SET_LOCAL_E5_JUDGE_DIRECTORY",
+  "flux2-klein-4b-editor": "SET_LOCAL_FLUX2_KLEIN_4B_DIRECTORY"
 }

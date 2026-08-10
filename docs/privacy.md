@@ -47,9 +47,6 @@ Upload only reviewed artifacts. Use repository secrets for authentication,
 immutable revisions in reports, and large-file storage for tensors. Preserve
 upstream provenance and licenses.
 
-The portable J0 cache contains 10,073 rows/samples and 15,003,648 bytes; its
-preflight runs automatically.
-
 ## Incident response
 
 If private information is committed, stop distribution, rotate credentials,

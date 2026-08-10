@@ -2,16 +2,17 @@
 
 Model artifacts are distributed from
 [RobinY99/MR-IQA-2](https://huggingface.co/RobinY99/MR-IQA-2). The public
-release contains the recommended Actor, the frozen Judge required by the
-training/evaluation contract, and the final completion-wide ablation.
+release contains the mask/field-credit E5 Actor, the frozen E5 Judge, and the
+pinned FLUX.2-klein-4B Editor. The completion-wide run is retained below only
+as an unpublished experiment.
 
 ## Released inference bundle
 
-| Artifact ID | Role and mode | Step | Validation PLCC / SRCC / MAE | Release decision |
-| --- | --- | ---: | --- | --- |
-| `source-e5-judge-step725` | Frozen source E5 Judge | 725 | 0.947970 / 0.934169 / 0.439320 | Required by reward/evaluation contract |
-| `actor-field-e5-step1455` | Field credit + component KL 0.02/0.02 | 1,455 | 0.935394 / 0.919533 / 0.354589 | **Recommended Actor; best/final** |
-| `actor-completion-e5-step1455` | Completion credit + global KL 0.02 | 1,455 | 0.928980 / 0.915821 / 0.997127 | Diagnostic final; solution collapsed |
+| Hub path | Model | Step | Validation PLCC / SRCC / MAE |
+| --- | --- | ---: | --- |
+| `actor/` | Mask/field-credit E5 Actor | 1,455 | 0.935394 / 0.919533 / 0.354589 |
+| `judge/` | Frozen E5 Judge | 725 | 0.947970 / 0.934169 / 0.439320 |
+| `editor/` | FLUX.2-klein-4B, revision `e7b7dc27f91deacad38e78976d1f2b499d76a294` | frozen | — |
 
 ## Checkpoint promotion
 
@@ -27,12 +28,6 @@ bash scripts/train.sh --mode field_component_kl002 --validate-config
 ```
 
 `--skip-validation --epochs 1` leaves an unpromoted checkpoint.
-
-## Portable training asset
-
-| Hub path | Bytes | Rows / samples | Schema |
-| --- | ---: | ---: | --- |
-| `training_assets/original_score_cache.sqlite` | 15,003,648 | 10,073 / 10,073 | `vf_original_score_cache_e5_judge_e5prompt_portable_v1` |
 
 ## Five-epoch validation history
 
@@ -50,7 +45,7 @@ rows remain present in zero-filled summaries.
 | E4 / 1,164 | 195 | 0.938546 | 0.923312 | 0.339879 | 0.289101 | 195 | 0/195 |
 | E5 / 1,455 | 200 | 0.935394 | 0.919533 | 0.354589 | 0.292849 | 199 | 0/200 |
 
-### Completion-wide credit + one loss-side global completion KL
+### Completion-wide credit + one loss-side global completion KL (unpublished)
 
 | Epoch / step | Valid | PLCC | SRCC | MAE | Zero-filled reasoning reward | Normalized solution unique | House-family hits |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -65,8 +60,9 @@ counts are Actor-ineligible rows, not deleted source rows.
 
 ## Six-dataset Actor generalization
 
-Both released Actors completed all 28,270 source rows. Metrics use valid Actor
-ratings for their denominator.
+Field E5 completed all 28,270 source rows and is the released Actor. The
+completion-wide experiment also completed all rows but is not published.
+Metrics use valid Actor ratings for their denominator.
 
 ### Field E5, recommended
 
@@ -79,7 +75,7 @@ ratings for their denominator.
 | LIVE-W | 1,162 / 1,162 | 0.893301 | 0.863127 | 0.373541 |
 | SPAQ | 11,112 / 11,125 | 0.899730 | 0.899407 | 0.366480 |
 
-### Completion E5, diagnostic final
+### Completion E5, unpublished diagnostic final
 
 | Dataset | Valid / rows | PLCC | SRCC | MAE |
 | --- | ---: | ---: | ---: | ---: |
@@ -95,7 +91,7 @@ ratings for their denominator.
 | Actor | Success / rows | Pooled `J0` | Pooled `J1` | Delta | Zero-filled reasoning reward | Normalized solution unique | Modal / rows | Semantic house family |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Field E5 | 28,044 / 28,270 | 2.851875 | 3.922885 | 1.071010 | 0.401480 | 23,457 | 51 / 28,044 | 0 / 28,044 |
-| Completion E5 | 28,270 / 28,270 | 2.854820 | 4.285586 | 1.430766 | 0.536715 | 1 | 28,270 / 28,270 | 28,270 / 28,270 |
+| Completion E5 (unpublished) | 28,270 / 28,270 | 2.854820 | 4.285586 | 1.430766 | 0.536715 | 1 | 28,270 / 28,270 | 28,270 / 28,270 |
 
 Field E5 has 23,457 normalized solutions; its `super-resolution` +
 `super-smooth` lexical skeleton appears in 28,022/28,044 eligible solutions

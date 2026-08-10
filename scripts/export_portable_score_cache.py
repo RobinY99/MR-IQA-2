@@ -22,7 +22,7 @@ from typing import Any, Iterable
 PORTABLE_SCHEMA = "vf_original_score_cache_e5_judge_e5prompt_portable_v1"
 DEFAULT_ACTOR_ID = "source-e5-judge-step725-original-score"
 DEFAULT_JUDGE_MODEL_ID = "source-e5-judge-step725"
-DEFAULT_JUDGE_MODEL_URI = "hf://RobinY99/MR-IQA-2/judge/source-e5"
+DEFAULT_JUDGE_MODEL_URI = "hf://RobinY99/MR-IQA-2/judge"
 DEFAULT_JUDGE_TREE_SHA256 = (
     "e25415173aacf515e97d5d561c6647a7a84f586061f3a9b2ab3fc079fe21be0a"
 )
@@ -124,7 +124,7 @@ def main() -> int:
     parser.add_argument("--input-sha256", required=True)
     parser.add_argument("--output-sqlite", type=Path, required=True)
     parser.add_argument("--output-summary", type=Path, required=True)
-    parser.add_argument("--expected-rows", type=int, default=10073)
+    parser.add_argument("--expected-rows", type=int, default=7000)
     parser.add_argument("--dataset-relative-prefix", default="koniq-10k/512x384")
     parser.add_argument("--source-actor-id", default=DEFAULT_SOURCE_ACTOR_ID)
     parser.add_argument("--source-schema", default=DEFAULT_SOURCE_SCHEMA)

@@ -25,7 +25,7 @@ from release_manifest import (  # noqa: E402
 
 
 ASSET_ID = "source-e5-judge-step725"
-HUB_SUBFOLDER = "judge/source-e5"
+HUB_SUBFOLDER = "judge"
 
 
 def sha256_file(path: Path) -> str:
@@ -42,7 +42,7 @@ class JudgeReleaseManifestTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
-        self.model = self.root / "download" / "judge" / "source-e5"
+        self.model = self.root / "download" / "judge"
         self.model.mkdir(parents=True)
         for index, name in enumerate(PORTABLE_REQUIRED_FILES, start=1):
             (self.model / name).write_bytes(

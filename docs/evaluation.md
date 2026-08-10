@@ -36,19 +36,32 @@ into one `merged.json` per dataset with metrics and retained completions.
 ## Full Actor→Editor→Judge evaluation
 
 Configure the frozen Editor, source E5 Judge, their manifests, and the
-original-score cache in `.env` using `.env.example`. The launcher validates
-the configured artifacts automatically:
+locally generated original-score cache in `.env` using `.env.example`. The
+launcher validates the configured artifacts automatically:
 
 ```dotenv
-DIFFUSERS_MODEL_PATH=<local-black-forest-labs-FLUX.2-klein-4B-revision-e7b7dc27>
-JUDGE_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5
-JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5/provenance.json
+DIFFUSERS_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/editor
+JUDGE_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/judge
+JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/provenance.json
+ORIGINAL_SCORE_CACHE_PATH=<local-generated-j0-cache.sqlite>
 ```
 
-The Editor is
-[`black-forest-labs/FLUX.2-klein-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/e7b7dc27f91deacad38e78976d1f2b499d76a294)
-at revision `e7b7dc27f91deacad38e78976d1f2b499d76a294` (Apache-2.0). Obtain it
-from the upstream repository.
+Download all three models from the project repository:
+
+```bash
+huggingface-cli download RobinY99/MR-IQA-2 \
+  --revision 402afd29be9eb539d9d6b054a985cb8c49c32bd5 \
+  --include "actor/**" "judge/**" "editor/**" \
+  --local-dir checkpoints/mr-iqa-2
+```
+
+For an Editor-only download, use `snapshot_download(...,
+revision="402afd29be9eb539d9d6b054a985cb8c49c32bd5",
+allow_patterns=["editor/**"])` and pass the resulting local `editor/`
+directory to Diffusers. The Editor is the exact FLUX.2-klein-4B revision
+`e7b7dc27f91deacad38e78976d1f2b499d76a294`. Build the J0 cache locally from
+deterministic source-image Judge outputs as described in
+[`training.md`](training.md).
 
 Then run:
 
@@ -106,10 +119,10 @@ Report Actor metrics and Editor/Judge metrics separately:
 - modal solution and semantic template-family share;
 - edited-image uniqueness.
 
-PLCC/SRCC measure rating behavior, so audit solution diversity separately. The
-completion E5 Actor reaches KonIQ PLCC/SRCC 0.931863/0.913624 while all 2,010
-normalized solutions are identical. Different source images still require
-per-image Editor/Judge evaluation.
+PLCC/SRCC measure rating behavior, so audit solution diversity separately. In
+the unpublished completion-wide experiment, KonIQ PLCC/SRCC reaches
+0.931863/0.913624 while all 2,010 normalized solutions are identical.
+Different source images still require per-image Editor/Judge evaluation.
 
 ## Comparing checkpoints
 

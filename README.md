@@ -1,78 +1,45 @@
-# MR-IQA-2: Fine-Grained Credit Assignment for Visual Quality Reasoning
+# MR-IQA-2: Masked Credit Assignment for Visual Quality Reasoning
 
 <p align="center">
   <a href="https://huggingface.co/RobinY99/MR-IQA-2">Model weights</a> |
   <a href="docs/training.md">Training</a> |
-  <a href="docs/evaluation.md">Evaluation</a> |
-  <a href="docs/checkpoints.md">Checkpoints and results</a>
+  <a href="docs/evaluation.md">Evaluation</a>
 </p>
 
 MR-IQA-2 trains a multimodal Actor to produce image-quality evidence, an edit
-solution, and a numeric rating. A frozen Editor applies the solution and a
-frozen E5 Judge measures the quality change.
+solution, and a numeric rating. A frozen FLUX.2-klein-4B Editor applies the
+solution, and a frozen E5 Judge measures the quality change. The released Actor
+uses masked credit so that component rewards are assigned through masks over
+their eligible generated tokens.
 
-> **Recommended release:** use the field-credit E5 Actor. The completion-wide
-> E5 Actor is a diagnostic ablation.
+The Hugging Face release contains exactly three models:
+
+- `actor/`: masked credit E5 Actor, step 1,455;
+- `judge/`: frozen E5 Judge, step 725;
+- `editor/`: FLUX.2-klein-4B at revision
+  `e7b7dc27f91deacad38e78976d1f2b499d76a294`.
 
 ## Repository contents
 
-- `actor/`, `editor/`, `judge/`, `global/`: model roles and orchestration.
-- `configs/training/`: two formal modes and two 30-step ablations.
+- `actor/`: Actor training, rollout, checkpoint, and evaluation code.
+- `editor/`: FLUX.2-klein service and client.
+- `judge/`: frozen E5 Judge service and scoring tools.
+- `global/`: shared reward, KL, and runtime contracts.
+- `configs/training/`: formal training presets.
 - `data/`: 7,000 training rows, 200 validation rows, and 28,270 test rows.
-- `environment/`, `requirements/`, `scripts/`: setup, training, evaluation,
-  and verification.
+- `environment/`, `requirements/`, `scripts/`: environments, launchers, tests,
+  and release tools.
 
-Model artifacts are distributed from
-[huggingface.co/RobinY99/MR-IQA-2](https://huggingface.co/RobinY99/MR-IQA-2).
-The source E5 Judge is included as a separate artifact because it is part of
-the reward and evaluation contract.
+## Installation
 
-## Pipeline
-
-```mermaid
-flowchart LR
-    I["Source image"] --> A["Actor: evidence + solution + rating"]
-    A --> R["Format, rating, reasoning, and length rewards"]
-    A --> E["Frozen Editor consumes solution only"]
-    I --> J0["Frozen E5 Judge: J0"]
-    E --> J1["Frozen E5 Judge: J1"]
-    J0 --> D["Quality delta: J1 - J0"]
-    J1 --> D
-    D --> R
-    R --> C["Field-local or completion-wide token credit"]
-    C --> K["Component KL or one global completion KL"]
-    K --> A
-```
-
-Formal training uses four Actor GPUs and four Editor/Judge service GPUs. Each
-update merges 4×36=144 trajectories. Five 291-update epochs reach step 1,455.
-The ViT and multimodal aligner remain frozen.
-
-## Training modes
-
-| Mode | Reward credit | KL regularization | Length | Intended use |
-| --- | --- | --- | --- | --- |
-| `field_component_kl002` | Parsed field | reasoning 0.02 + rating 0.02 component KL | 5×291 | **Recommended formal mode** |
-| `completion_global_kl002` | Entire eligible completion | one loss-side global completion KL, beta 0.02; `kl_in_reward=false` | 5×291 | Collapse-analysis ablation |
-| `field_nokl_30step` | Parsed field | none | 30 steps | Short controlled ablation |
-| `completion_nokl_30step` | Entire eligible completion | none | 30 steps | Short controlled ablation |
-
-Exact contracts are in
-[`configs/training/mode_matrix.json`](configs/training/mode_matrix.json) and
-[`global/contracts/reward_and_kl.md`](global/contracts/reward_and_kl.md).
-
-## Quick start
-
-Full training and evaluation require Linux, CUDA 13.0, and eight visible
-NVIDIA GPUs.
+Full training and evaluation require Linux, CUDA 13.0, and one host with eight
+visible NVIDIA GPUs.
 
 ```bash
 git clone https://github.com/RobinY99/MR-IQA-2.git
 cd MR-IQA-2
 
 cp .env.example .env
-# Edit .env with paths to the downloaded Actor, Editor, Judge, images,
-# original-score cache, and validated FlashAttention wheel.
 
 conda env create -f environment/actor-judge.yml
 conda env create -f environment/editor.yml
@@ -80,113 +47,272 @@ conda run -n mr_iqa_actor_judge \
   python -m pip install -r requirements/actor-judge.txt
 conda run -n mr_iqa_editor \
   python -m pip install -r requirements/editor.txt
-# Install the FlashAttention wheel documented in environment/README.md.
+```
 
+Install the FlashAttention wheel documented in
+[`environment/README.md`](environment/README.md), then download the base model
+and the three released models:
+
+```bash
 python -m pip install -r requirements/publish.txt
+
 huggingface-cli download Qwen/Qwen3.5-4B \
   --revision 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a \
   --local-dir checkpoints/qwen3.5-4b
-huggingface-cli download RobinY99/MR-IQA-2 \
-  --include "judge/source-e5/**" \
-  --local-dir checkpoints/mr-iqa-2
-huggingface-cli download RobinY99/MR-IQA-2 \
-  training_assets/original_score_cache.sqlite \
-  --local-dir checkpoints/mr-iqa-2
 
-bash scripts/test_release.sh --static
-bash scripts/train.sh --mode field_component_kl002 --print-plan
+huggingface-cli download RobinY99/MR-IQA-2 \
+  --revision 402afd29be9eb539d9d6b054a985cb8c49c32bd5 \
+  --include "actor/**" "judge/**" "editor/**" \
+  --local-dir checkpoints/mr-iqa-2
 ```
 
-Point the runtime at the downloaded Judge and J0 cache:
+Set the local paths in `.env`:
 
 ```dotenv
-JUDGE_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5
-JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5/provenance.json
-ORIGINAL_SCORE_CACHE_PATH=<repository-root>/checkpoints/mr-iqa-2/training_assets/original_score_cache.sqlite
+ACTOR_MODEL_PATH=<repository-root>/checkpoints/qwen3.5-4b
+DIFFUSERS_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/editor
+JUDGE_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/judge
+JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/provenance.json
+ORIGINAL_SCORE_CACHE_PATH=<local-generated-j0-cache.sqlite>
 ```
 
-Keep the remaining variables from `.env.example`; the launcher validates them.
+Keep the remaining variables from `.env.example`. Generate the deterministic
+J0 cache as described in [`docs/training.md`](docs/training.md).
 
-Validate the complete local configuration before loading a model:
+## Loading released models
+
+Actor and Judge load directly from their Hugging Face subfolders:
+
+```python
+from transformers import AutoModelForImageTextToText, AutoProcessor
+
+repo_id = "RobinY99/MR-IQA-2"
+revision = "402afd29be9eb539d9d6b054a985cb8c49c32bd5"
+
+
+def load_qwen(role):
+    processor = AutoProcessor.from_pretrained(
+        repo_id,
+        subfolder=role,
+        revision=revision,
+    )
+    model = AutoModelForImageTextToText.from_pretrained(
+        repo_id,
+        subfolder=role,
+        revision=revision,
+        torch_dtype="auto",
+        device_map="auto",
+        use_safetensors=True,
+    )
+    return processor, model
+
+
+actor_processor, actor = load_qwen("actor")
+judge_processor, judge = load_qwen("judge")
+```
+
+The Editor loads from its downloaded subfolder:
+
+```python
+from pathlib import Path
+
+import torch
+from diffusers import Flux2KleinPipeline
+from huggingface_hub import snapshot_download
+
+snapshot = snapshot_download(
+    "RobinY99/MR-IQA-2",
+    revision="402afd29be9eb539d9d6b054a985cb8c49c32bd5",
+    allow_patterns=["editor/**"],
+)
+editor = Flux2KleinPipeline.from_pretrained(
+    Path(snapshot) / "editor",
+    torch_dtype=torch.bfloat16,
+)
+```
+
+## Eight-GPU deployment
+
+The launchers use a fixed single-host topology. During training, four Actor
+ranks run on GPUs 0–3 while each GPU in 4–7 hosts one Editor service and one
+Judge service:
+
+| GPU | Training process | Editor URL | Judge URL |
+| ---: | --- | --- | --- |
+| 0–3 | Actor ranks 0–3 | — | — |
+| 4 | Editor + Judge lane 0 | `http://127.0.0.1:8212` | `http://127.0.0.1:8204` |
+| 5 | Editor + Judge lane 1 | `http://127.0.0.1:8213` | `http://127.0.0.1:8205` |
+| 6 | Editor + Judge lane 2 | `http://127.0.0.1:8214` | `http://127.0.0.1:8206` |
+| 7 | Editor + Judge lane 3 | `http://127.0.0.1:8215` | `http://127.0.0.1:8207` |
+
+`scripts/train.sh` starts, checks, routes requests to, and stops these owned
+services. Each optimizer update merges 36 trajectories from each Actor rank,
+for 144 trajectories globally. The ViT and multimodal aligner remain frozen.
+
+Full evaluation reuses all eight GPUs in three non-overlapping phases:
+
+1. Actor inference runs eight shards on GPUs 0–7 and merges their outputs.
+2. Editor inference runs eight lanes on GPUs 0–7 at ports 8212–8219. Every
+   edit must finish before the Editor services are stopped.
+3. Judge inference runs eight lanes on GPUs 0–7 at ports 8204–8211 and scores
+   the saved edited images.
+
+By default, the Actor evaluation workers use temporary internal vLLM ports
+40000, 41024, 42048, 43072, 44096, 45120, 46144, and 47168. They are not
+Editor/Judge HTTP endpoints. `scripts/evaluate.sh` waits for all eight GPUs
+before Actor inference and before entering the offline service stages. The
+offline runner enforces the Editor barrier, stops Editor, and only then starts
+Judge.
+
+Print the resolved deployment without loading a model:
 
 ```bash
+bash scripts/train.sh --mode field_component_kl002 --print-plan
+bash scripts/evaluate.sh --print-plan
+```
+
+## Port and HTTP interaction
+
+Editor and Judge services bind to `127.0.0.1`; they are available only to
+processes on the same host. Requests pass absolute local image paths, not image
+bytes, so the caller and service must see the same filesystem.
+
+| Service | Method and endpoint | Request | Main response fields |
+| --- | --- | --- | --- |
+| Editor | `GET /health` | none | `ready`, `backend`, model/runtime metadata |
+| Editor | `POST /edit` | `image_path` and at least one of `positive_prompt` or `region_prompt`; optional `negative_prompt`, `edit_plan`, `request_index`, `seed` | `status`, `edited_path`, `seed`, runtime metadata |
+| Judge | `GET /health` | none | `ready`, model and generation provenance |
+| Judge | `POST /score_image` | `image_path`; optional `repeats` in 1–4 | `status`, `mean`, `valid_count`, `outputs` |
+
+`negative_prompt` is accepted for request compatibility, but the current
+Editor profile reports `negative_prompt_supported: false`.
+
+After a launcher reports that the services are ready, inspect them with:
+
+```bash
+curl -fsS http://127.0.0.1:8212/health | python -m json.tool
+curl -fsS http://127.0.0.1:8204/health | python -m json.tool
+```
+
+An Editor request returns an `edited_path` on the local filesystem:
+
+```bash
+curl -fsS -X POST http://127.0.0.1:8212/edit \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "image_path": "/absolute/path/to/input.png",
+    "positive_prompt": "Reduce noise while preserving content and geometry.",
+    "request_index": 0
+  }' | python -m json.tool
+```
+
+Pass that path to the Judge:
+
+```bash
+curl -fsS -X POST http://127.0.0.1:8204/score_image \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "image_path": "/absolute/path/to/edited.png",
+    "repeats": 1
+  }' | python -m json.tool
+```
+
+Do not expose these ports publicly. The published launchers treat them as a
+fixed contract. If adapting the topology in code, update the GPU lists, service
+ports, and Actor-facing URL lists together; the service manager rejects
+duplicate ports, mismatched lane counts, and ports outside 1024–65535.
+
+## Masked credit training
+
+The released formal setting uses the launcher preset
+`field_component_kl002`: masked credit, reasoning and rating component KL with
+beta 0.02, five epochs, and 291 optimizer updates per epoch. Validation covers
+all 200 rows between epochs, and only a promoted checkpoint can seed the next
+epoch.
+
+Validate the configuration before loading a model:
+
+```bash
+bash scripts/test_release.sh --static
 bash scripts/train.sh --mode field_component_kl002 --validate-config
 ```
 
-Run a one-update end-to-end smoke test, then the recommended formal mode:
+The launchers source `ENV_FILE` and values in that file take precedence over
+same-named shell variables. Create a smoke-specific copy when changing its free
+space threshold, then use a new ID and output directory for every invocation:
 
 ```bash
-# Use a fresh ID and fresh large-storage directory for every invocation.
-export RUN_ID="smoke-field-$(date -u +%Y%m%dT%H%M%SZ)-${RANDOM}"
-export OUTPUT_ROOT="<large-storage-root>/mr-iqa-2/${RUN_ID}"
-export VF_STORAGE_ROOT="${OUTPUT_ROOT}"
-export VF_MIN_FREE_GIB="<host-appropriate-smoke-threshold>"
-bash scripts/train.sh --mode field_component_kl002 --smoke
+cp .env .env.smoke
+# Edit .env.smoke and set VF_MIN_FREE_GIB for this host.
 
-export RUN_ID="field-formal-$(date -u +%Y%m%dT%H%M%SZ)-${RANDOM}"
+export RUN_ID="smoke-masked-$(date -u +%Y%m%dT%H%M%SZ)-${RANDOM}"
 export OUTPUT_ROOT="<large-storage-root>/mr-iqa-2/${RUN_ID}"
 export VF_STORAGE_ROOT="${OUTPUT_ROOT}"
-export VF_MIN_FREE_GIB=500
+ENV_FILE="$PWD/.env.smoke" \
+  bash scripts/train.sh --mode field_component_kl002 --smoke
+
+export RUN_ID="masked-formal-$(date -u +%Y%m%dT%H%M%SZ)-${RANDOM}"
+export OUTPUT_ROOT="<large-storage-root>/mr-iqa-2/${RUN_ID}"
+export VF_STORAGE_ROOT="${OUTPUT_ROOT}"
 bash scripts/train.sh --mode field_component_kl002
 ```
 
-Use a new `RUN_ID` and output directory for every launch. Formal training runs
-five 291-update epochs and validates all 200 rows between epochs. Only a
-`promoted` checkpoint can seed the next epoch. `WANDB_MODE=offline` is the
-default.
+`WANDB_MODE=offline` is the default. See
+[`docs/training.md`](docs/training.md) for data, cache, checkpoint, and resume
+contracts.
 
 ## Evaluation
 
-Actor-only evaluation measures output validity and rating PLCC/SRCC/MAE without
-loading the Editor or Judge:
+Create a dedicated evaluation environment so the evaluated checkpoint and
+image root are explicit:
 
 ```bash
-EVAL_ACTOR_ONLY=1 \
-ACTOR_MODEL_PATH=<actor-checkpoint> \
-EVAL_IMAGE_ROOT=<dataset-image-root> \
-bash scripts/evaluate.sh test
+cp .env .env.eval
+# In .env.eval, set:
+# ACTOR_MODEL_PATH=<actor-checkpoint>
+# EVAL_IMAGE_ROOT=<dataset-image-root>
 ```
 
-Full evaluation uses eight-shard Actor inference, a complete Editor barrier,
-then the frozen E5 Judge:
+Actor-only evaluation measures output validity and rating PLCC/SRCC/MAE
+without starting the Editor or Judge:
 
 ```bash
-ACTOR_MODEL_PATH=<actor-checkpoint> \
-EVAL_IMAGE_ROOT=<dataset-image-root> \
-bash scripts/evaluate.sh validation
-
-ACTOR_MODEL_PATH=<actor-checkpoint> \
-EVAL_IMAGE_ROOT=<dataset-image-root> \
-bash scripts/evaluate.sh test
+ENV_FILE="$PWD/.env.eval" EVAL_ACTOR_ONLY=1 \
+  bash scripts/evaluate.sh test
 ```
 
-Use `all` for validation plus all six test datasets. See
-[`docs/evaluation.md`](docs/evaluation.md).
-
-## Released checkpoints
-
-| Artifact | Step | Validation PLCC / SRCC / MAE | Status |
-| --- | ---: | --- | --- |
-| Source E5 Judge | 725 | 0.947970 / 0.934169 / 0.439320 | Frozen reward/evaluation model |
-| Field Actor E5 | 1,455 | 0.935394 / 0.919533 / 0.354589 | **Recommended; best/final** |
-| Completion Actor E5 | 1,455 | 0.928980 / 0.915821 / 0.997127 | Diagnostic final; collapsed |
-
-Full training history and six-dataset results are in
-[`docs/checkpoints.md`](docs/checkpoints.md).
-
-## Reproducibility and safety checks
+Full validation and six-dataset evaluation use the eight-GPU phases described
+above:
 
 ```bash
-# Dependency-free: schemas, syntax, privacy patterns, and blob policy.
+ENV_FILE="$PWD/.env.eval" bash scripts/evaluate.sh validation
+ENV_FILE="$PWD/.env.eval" bash scripts/evaluate.sh test
+ENV_FILE="$PWD/.env.eval" bash scripts/evaluate.sh all
+```
+
+The `all` mode runs validation plus all six test datasets. See
+[`docs/evaluation.md`](docs/evaluation.md) for output schemas and resume rules.
+
+## Released models
+
+| Hub path | Model | Step | Validation PLCC / SRCC / MAE |
+| --- | --- | ---: | --- |
+| `actor/` | Masked credit E5 Actor | 1,455 | 0.935394 / 0.919533 / 0.354589 |
+| `judge/` | Frozen E5 Judge | 725 | 0.947970 / 0.934169 / 0.439320 |
+| `editor/` | FLUX.2-klein-4B | frozen | — |
+
+## Verification
+
+```bash
+# Dependency-free schemas, syntax, privacy, and artifact checks.
 bash scripts/test_release.sh --static
 
-# Full CPU contract suite after installing requirements/test.txt + CPU PyTorch.
+# Full CPU contract suite after installing requirements/test.txt and CPU PyTorch.
 bash scripts/test_release.sh
 ```
 
-Training audits shard completeness, update counts, finite rewards/KL, and KL
-application counts. Completion-global mode requires one global-completion KL
-application and zero component-KL applications per valid update.
+Training checks shard completeness, update counts, finite rewards and KL, and
+the expected masked credit and component-KL application counts.
 
 ## License and citation
 

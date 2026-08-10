@@ -235,7 +235,7 @@ def main() -> int:
         "--cache-actor-id",
         default="source_actor_original_score",
     )
-    parser.add_argument("--expected-samples", type=int, default=10073)
+    parser.add_argument("--expected-samples", type=int, default=7000)
     args = parser.parse_args()
 
     sources = unique_by_sample(

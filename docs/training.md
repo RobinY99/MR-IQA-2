@@ -21,17 +21,18 @@ Create the two Python 3.12.13 environments in
 Obtain the following before training:
 
 1. the Qwen3.5-4B-compatible initial Actor;
-2. the frozen source E5 Judge and its manifest;
-3. the frozen `black-forest-labs/FLUX.2-klein-4B` Editor at the pinned
-   revision below;
+2. `judge/`, the frozen E5 Judge and its provenance file;
+3. `editor/`, the frozen FLUX.2-klein-4B Editor;
 4. source images corresponding to `data/train.jsonl`;
-5. the validated original-image Judge score cache;
+5. a locally built original-image Judge score cache;
 6. a compatible prebuilt FlashAttention wheel.
 
 Project weights are at
 [huggingface.co/RobinY99/MR-IQA-2](https://huggingface.co/RobinY99/MR-IQA-2).
+The released mask E5 Actor is in `actor/`; formal reproduction from epoch 1
+starts from the pinned Qwen base model below.
 
-### Initial Actor and frozen Editor
+### Download the models
 
 The initial Actor is the official Apache-2.0
 [`Qwen/Qwen3.5-4B`](https://huggingface.co/Qwen/Qwen3.5-4B/tree/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a)
@@ -44,34 +45,93 @@ huggingface-cli download Qwen/Qwen3.5-4B \
   --local-dir checkpoints/qwen3.5-4b
 ```
 
-The Editor is
-[`black-forest-labs/FLUX.2-klein-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/e7b7dc27f91deacad38e78976d1f2b499d76a294)
-at revision `e7b7dc27f91deacad38e78976d1f2b499d76a294` (Apache-2.0). Obtain it
-from the upstream repository and set `DIFFUSERS_MODEL_PATH`.
-
-### Portable original-image J0 cache
-
-The public cache is stored at
-`training_assets/original_score_cache.sqlite` in the Hugging Face repository.
-Download it with the pinned publishing client:
+Download the frozen Judge and Editor from the project repository:
 
 ```bash
-python -m pip install -r requirements/publish.txt
 huggingface-cli download RobinY99/MR-IQA-2 \
-  training_assets/original_score_cache.sqlite \
+  --revision 402afd29be9eb539d9d6b054a985cb8c49c32bd5 \
+  --include "judge/**" "editor/**" \
   --local-dir checkpoints/mr-iqa-2
 ```
 
-Published cache contract:
+The Editor is the exact
+[`black-forest-labs/FLUX.2-klein-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/e7b7dc27f91deacad38e78976d1f2b499d76a294)
+revision `e7b7dc27f91deacad38e78976d1f2b499d76a294`. Diffusers must receive
+the local `editor/` directory. To obtain only that directory:
 
-| Property | Value |
-| --- | --- |
-| Relative Hub path | `training_assets/original_score_cache.sqlite` |
-| Bytes | 15,003,648 |
-| Rows / samples | 10,073 / 10,073 |
-| Actor ID | `source-e5-judge-step725-original-score` |
-| Payload schema | `vf_original_score_cache_e5_judge_e5prompt_portable_v1` |
-| Observed J0 min / max / mean | 0.83 / 4.23 / 3.1357688871239398 |
+```python
+from pathlib import Path
+import torch
+from diffusers import Flux2KleinPipeline
+from huggingface_hub import snapshot_download
+
+snapshot = snapshot_download(
+    "RobinY99/MR-IQA-2",
+    revision="402afd29be9eb539d9d6b054a985cb8c49c32bd5",
+    allow_patterns=["editor/**"],
+)
+editor_path = Path(snapshot) / "editor"
+editor = Flux2KleinPipeline.from_pretrained(
+    editor_path,
+    torch_dtype=torch.bfloat16,
+)
+```
+
+### Build the original-image J0 cache locally
+
+The model repository does not contain a training cache. After configuring
+`.env`, build the 7,000-row source manifest, score it with the frozen Judge,
+then create the local cache:
+
+```bash
+set -a
+source .env
+set +a
+
+CACHE_OUTPUT=/path/to/local-output
+SOURCE_MANIFEST="${CACHE_OUTPUT}/source-image-manifest.jsonl"
+JUDGE_RUN_DIR="${CACHE_OUTPUT}/judge-service"
+mkdir -p "${CACHE_OUTPUT}"
+
+"${ACTOR_PYTHON}" scripts/build_source_manifest.py \
+  --train-manifest data/train.jsonl \
+  --image-root "${TRAIN_IMAGE_ROOT}" \
+  --output "${SOURCE_MANIFEST}" \
+  --expected-samples 7000
+
+bash judge/launch.sh start "${JUDGE_RUN_DIR}"
+"${JUDGER_PYTHON}" judge/score_manifest.py \
+  --source-manifest "${SOURCE_MANIFEST}" \
+  --output "${CACHE_OUTPUT}/deterministic-source-judge-output.jsonl" \
+  --host 127.0.0.1 \
+  --ports "${JUDGER_PORTS:-8204,8205,8206,8207}" \
+  --resume
+bash judge/launch.sh stop "${JUDGE_RUN_DIR}"
+
+"${ACTOR_PYTHON}" actor/scripts/build_e5_original_score_cache.py \
+  --source-manifest "${SOURCE_MANIFEST}" \
+  --judge-scores "${CACHE_OUTPUT}/deterministic-source-judge-output.jsonl" \
+  --output-sqlite "${CACHE_OUTPUT}/original_score_cache.sqlite" \
+  --output-summary "${CACHE_OUTPUT}/original_score_cache.summary.json" \
+  --judge-model-id "${JUDGE_MODEL_ID:-source-e5-judge-step725}" \
+  --judge-model-path "${JUDGE_MODEL_PATH}" \
+  --judge-model-tree-sha256 "${JUDGE_MODEL_TREE_SHA256}" \
+  --judge-prompt-schema "${JUDGER_PROMPT_SCHEMA:-e5_training_reasoning_v5}" \
+  --judge-prompt-hash "${JUDGE_PROMPT_HASH}" \
+  --payload-schema vf_original_score_cache_e5_judge_v1 \
+  --cache-actor-id source-e5-judge-step725-original-score \
+  --expected-samples 7000
+```
+
+The scoring command writes one atomic JSONL row per source sample. Failed rows
+remain explicit and return a nonzero status; rerunning with `--resume` retains
+successful rows and retries the rest.
+
+The source-manifest builder records the absolute image path, SHA-256, width,
+and height for every unique training sample and rejects missing or duplicate
+images. Set `ORIGINAL_SCORE_CACHE_PATH` and copy `sqlite_sha256` from the
+generated summary into `ORIGINAL_SCORE_CACHE_SHA256`. Do not reuse a cache
+built with a different Judge, prompt, image manifest, or image contents.
 
 ## 3. Private machine configuration
 
@@ -89,21 +149,23 @@ Fill `.env` with:
 - original-score cache path, row/sample contract, schema, and identity field;
 - FlashAttention wheel path and artifact identity.
 
-For `judge/source-e5`, configure:
+Configure the downloaded models:
 
 ```dotenv
-JUDGE_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5
-JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5/provenance.json
+DIFFUSERS_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/editor
+JUDGE_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/judge
+JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/provenance.json
 ```
 
 Configure the J0 cache:
 
 ```dotenv
-ORIGINAL_SCORE_CACHE_PATH=<repository-root>/checkpoints/mr-iqa-2/training_assets/original_score_cache.sqlite
-ORIGINAL_SCORE_CACHE_EXPECTED_ROW_COUNT=10073
-ORIGINAL_SCORE_CACHE_EXPECTED_SAMPLE_COUNT=10073
+ORIGINAL_SCORE_CACHE_PATH=<local-output>/original_score_cache.sqlite
+ORIGINAL_SCORE_CACHE_SHA256=<sqlite_sha256-from-summary>
+ORIGINAL_SCORE_CACHE_EXPECTED_ROW_COUNT=7000
+ORIGINAL_SCORE_CACHE_EXPECTED_SAMPLE_COUNT=7000
 ORIGINAL_SCORE_CACHE_EXPECTED_ACTOR_IDS=source-e5-judge-step725-original-score
-ORIGINAL_SCORE_CACHE_PAYLOAD_SCHEMA=vf_original_score_cache_e5_judge_e5prompt_portable_v1
+ORIGINAL_SCORE_CACHE_PAYLOAD_SCHEMA=vf_original_score_cache_e5_judge_v1
 ORIGINAL_SCORE_CACHE_EXPECTED_RATING_MIN=0.0
 ORIGINAL_SCORE_CACHE_EXPECTED_RATING_MAX=5.0
 ```

@@ -202,7 +202,7 @@ class OriginalScoreCacheTests(unittest.TestCase):
                 },
                 "source_judge": {
                     "model_id": portable_model,
-                    "model_uri": "hf://RobinY99/MR-IQA-2/judge/source-e5",
+                    "model_uri": "hf://RobinY99/MR-IQA-2/judge",
                     "model_tree_sha256": "c" * 64,
                     "prompt_hash": PROMPT_HASH,
                     "rating": 3.25,

@@ -9,9 +9,11 @@ and validated service, reward, KL, and checkpoint-chain contracts.
 | --- | --- |
 | Initial Actor repository | [`Qwen/Qwen3.5-4B`](https://huggingface.co/Qwen/Qwen3.5-4B/tree/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a), Apache-2.0 |
 | Initial Actor Hub revision | `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a` |
-| Frozen Editor repository | [`black-forest-labs/FLUX.2-klein-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/e7b7dc27f91deacad38e78976d1f2b499d76a294) |
-| Frozen Editor Hub revision | `e7b7dc27f91deacad38e78976d1f2b499d76a294` |
-| Judge provenance manifest | `judge/source-e5/provenance.json` |
+| Released mask E5 Actor | `RobinY99/MR-IQA-2`, subfolder `actor/` |
+| Frozen E5 Judge | `RobinY99/MR-IQA-2`, subfolder `judge/` |
+| Frozen Editor | `RobinY99/MR-IQA-2`, local subfolder `editor/` |
+| Editor upstream revision | `black-forest-labs/FLUX.2-klein-4B@e7b7dc27f91deacad38e78976d1f2b499d76a294` |
+| Judge provenance manifest | `judge/provenance.json` |
 | Actor world size | 4 |
 | Service GPUs | 4 |
 | Generations per image | 6 |
@@ -118,9 +120,12 @@ For every global step, retain the merged four-rank trajectory fields:
 - optimizer/scheduler update indicators;
 - normalized solution diversity and semantic-template rates.
 
-The two published formal runs each contain 1,455 complete global steps and
-209,520 trajectories. Across both runs, 419,040 trajectories were audited with
-zero missing/duplicate global steps, zero incomplete four-rank steps, and zero
+The field run contains 1,455 complete global steps and 209,520 trajectories;
+its E5 Actor is released.
+
+The completion-wide experiment contains the same counts and remains
+unpublished. Across both runs, 419,040 trajectories were audited with zero
+missing/duplicate global steps, zero incomplete four-rank steps, and zero
 non-finite metric failures. Optimizer and scheduler updated in all 1,455 steps
 of each run.
 

@@ -343,7 +343,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--model-path", type=Path, required=True)
     parser.add_argument("--expected-asset-id", required=True)
-    parser.add_argument("--expected-hub-subfolder", default="judge/source-e5")
+    parser.add_argument("--expected-hub-subfolder", default="judge")
     parser.add_argument("--expected-source-tree", required=True)
     parser.add_argument("--expected-export-tree", required=True)
     parser.add_argument("--expected-file-count", type=int, default=10)

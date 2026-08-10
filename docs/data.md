@@ -29,6 +29,8 @@ images, target_mean, target_std, sample_id, dataset_name, source_image
 
 `actor/scripts/prepare_phase_a_dataset.py` resolves `images` against
 `TRAIN_IMAGE_ROOT` and creates the structured evidence/solution/rating request.
+`scripts/build_source_manifest.py` resolves the same 7,000 images and records
+their local identity for deterministic J0-cache generation.
 
 Validation rows contain:
 
