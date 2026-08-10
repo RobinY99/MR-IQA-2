@@ -333,13 +333,22 @@ ENV_FILE="$PWD/.env.eval" bash scripts/evaluate.sh all
 The `all` mode runs validation plus all six test datasets. See
 [`docs/evaluation.md`](docs/evaluation.md) for output schemas and resume rules.
 
-## Released models
+## PLCC/SRCC performance
 
-| Hub path | Model | Step | Validation PLCC / SRCC / MAE |
-| --- | --- | ---: | --- |
-| `actor/` | Masked credit E5 Actor | 1,455 | 0.935394 / 0.919533 / 0.354589 |
-| `judge/` | Frozen E5 Judge | 725 | 0.947970 / 0.934169 / 0.439320 |
-| `editor/` | FLUX.2-klein-4B | frozen | — |
+Actor-only rating performance on the six generalization datasets is shown
+below. Each entry is `PLCC / SRCC`; Average is the unweighted macro mean of
+the six dataset-level coefficients.
+
+| Model | KonIQ-10K | SPAQ | LIVE-W | AGIQA-3K | KADID-10K | CSIQ | Average |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| [MR-IQA](https://github.com/RobinY99/MR-IQA) | 0.949 / 0.931 | 0.892 / 0.897 | 0.899 / 0.883 | 0.804 / 0.732 | 0.672 / 0.683 | 0.767 / 0.732 | 0.831 / 0.810 |
+| MR-IQA-2 | 0.937 / 0.917 | 0.900 / 0.899 | 0.893 / 0.863 | 0.809 / 0.739 | 0.667 / 0.669 | 0.824 / 0.785 | 0.838 / 0.812 |
+
+MR-IQA values are from the released Qwen3-VL-2B result in the
+[MR-IQA paper](https://arxiv.org/pdf/2606.29760). MR-IQA-2 values use the
+released masked-credit E5 Actor at step 1,455; exact valid-row counts and
+unrounded coefficients are reported in
+[`docs/checkpoints.md`](docs/checkpoints.md#field-e5-recommended).
 
 ## Verification
 
