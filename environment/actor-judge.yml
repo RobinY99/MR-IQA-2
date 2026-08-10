@@ -1,0 +1,9 @@
+name: mr_iqa_actor_judge
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12.13
+  - pip
+  - setuptools
+  - wheel
+  - ninja

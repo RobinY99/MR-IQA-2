@@ -1,0 +1,42 @@
+{
+  "files": [
+    {
+      "file": "step_metrics_fieldmask_kl002_e5.csv",
+      "rows": 1455,
+      "sha256": "12dcfb1f70c94ddabb24e5c4eacde8f23edf2bcb0df62e5ea43d766f4008797e",
+      "source_kind": "derived_numeric_or_generated_text"
+    },
+    {
+      "file": "step_metrics_completioncredit_globalkl002_e5.csv",
+      "rows": 1455,
+      "sha256": "ea3eaf5170fac1424bcc5b36269fe6fe7de78a37264c5e34787490f1c3b3951e",
+      "source_kind": "derived_numeric_or_generated_text"
+    },
+    {
+      "file": "generalization_exact_summary.csv",
+      "rows": 18,
+      "sha256": "2d9012aa0164181bc10aedf8a8d1f2efa2016958292210f8ec3ec62cccdd11d5",
+      "source_kind": "derived_numeric_or_generated_text"
+    },
+    {
+      "file": "collapse_milestones.csv",
+      "rows": 13,
+      "sha256": "ddc2166e1e69d1886ffe6ca8545f9dac473ba4816858cc9a7b1dd8706a88a88e",
+      "source_kind": "derived_numeric_or_generated_text"
+    },
+    {
+      "file": "training_epoch_summary.csv",
+      "rows": 12,
+      "sha256": "b065066138a0b09a960880b45af710bff0776c786c97d7c58354f4885b08da2e",
+      "source_kind": "derived_numeric_or_generated_text"
+    },
+    {
+      "file": "validation_checkpoint_metrics.csv",
+      "rows": 10,
+      "sha256": "6eb49c35966f1fb0b80b438bc1649b907a8c051674aee07291d160098a8f0e14",
+      "source_kind": "derived_numeric_or_generated_text"
+    }
+  ],
+  "privacy_policy": "absolute machine paths and raw runtime metadata removed",
+  "schema_version": "mr_iqa_2_public_results_v1"
+}

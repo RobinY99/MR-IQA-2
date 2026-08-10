@@ -1,0 +1,26 @@
+[project]
+name = "mr-iqa-2"
+version = "0.1.0"
+description = "Faithful visual reflection via fine-grained credit assignment"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "MR-IQA-2 contributors" }]
+
+[project.urls]
+Repository = "https://github.com/RobinY99/MR-IQA-2"
+Models = "https://huggingface.co/RobinY99/MR-IQA-2"
+
+[tool.pytest.ini_options]
+testpaths = ["actor/tests", "editor/tests", "judge/tests"]
+python_files = ["test_*.py"]
+addopts = [
+  "-ra",
+  "--strict-markers",
+  "-p",
+  "no:cacheprovider",
+]
+markers = [
+  "gpu: requires a CUDA device and is excluded from CPU CI",
+  "integration: requires model checkpoints or resident services",
+]

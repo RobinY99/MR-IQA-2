@@ -1,0 +1,6 @@
+# Lightweight dependencies for release and CPU contract tests.
+# PyTorch is installed separately from the official CPU wheel index in CI.
+pytest==8.4.2
+Pillow==11.3.0
+requests==2.33.1
+numpy==2.3.5

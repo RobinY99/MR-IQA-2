@@ -1,0 +1,10 @@
+name: mr_iqa_editor
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12.13
+  - pip
+  - git
+  - setuptools
+  - wheel
+  - ninja

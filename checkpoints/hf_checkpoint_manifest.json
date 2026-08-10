@@ -1,0 +1,13 @@
+{
+  "schema_version": "mriqa2_hf_checkpoint_manifest_v1",
+  "canonical_manifest": "https://huggingface.co/RobinY99/MR-IQA-2/blob/main/checkpoint_manifest.json",
+  "repository_id": "RobinY99/MR-IQA-2",
+  "default_asset_id": "actor-field-e5-step1455",
+  "asset_ids": [
+    "actor-field-e5-step1455",
+    "source-e5-judge-step725",
+    "actor-completion-e4-step1164",
+    "actor-completion-e5-step1455"
+  ],
+  "note": "Use the canonical Hub manifest for export. This index intentionally contains no private source paths."
+}

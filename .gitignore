@@ -1,0 +1,51 @@
+# Machine-local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python and test caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Runtime and experiment outputs
+outputs/
+runs/
+logs/
+wandb/
+editor_outputs/
+evaluation_outputs/
+*.log
+*.pid
+
+# Large model/training artifacts belong on Hugging Face, not GitHub
+checkpoints/**/*.safetensors
+checkpoints/**/*.bin
+checkpoints/**/*.pt
+checkpoints/**/*.pth
+checkpoints/**/*.ckpt
+checkpoints/**/*.sqlite
+checkpoints/**/optimizer.pt
+checkpoints/**/scheduler.pt
+checkpoints/**/rng_state*.pth
+checkpoints/**/trainer_state.json
+
+# Download and build caches
+.cache/
+build/
+dist/
+*.egg-info/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+*~

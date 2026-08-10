@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use MR-IQA-2, please cite this software release."
+title: "MR-IQA-2: Fine-Grained Credit Assignment for Visual Quality Reasoning"
+type: software
+version: 0.1.0
+date-released: 2026-08-10
+license: MIT
+authors:
+  - name: "MR-IQA-2 Contributors"
+repository-code: "https://github.com/RobinY99/MR-IQA-2"
+url: "https://github.com/RobinY99/MR-IQA-2"
+keywords:
+  - image quality assessment
+  - visual reasoning
+  - reinforcement learning
+  - credit assignment
+  - multimodal learning
