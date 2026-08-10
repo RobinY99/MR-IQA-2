@@ -43,23 +43,21 @@ counts, finish reason, source row, and errors.
 ## Full Actor→Editor→Judge evaluation
 
 Configure the frozen Editor, source E5 Judge, their manifests, and the
-original-score cache in `.env`. Copy the artifact-identity values from the
-published manifests; the launcher validates them automatically:
+original-score cache in `.env` using `.env.example`. The launcher validates
+the configured artifacts automatically:
 
 ```dotenv
 DIFFUSERS_MODEL_PATH=<local-black-forest-labs-FLUX.2-klein-4B-revision-e7b7dc27>
 JUDGE_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5
 JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5/provenance.json
-JUDGE_MODEL_TREE_SHA256=<from-provenance-manifest>
-JUDGE_MODEL_EXPORT_TREE_SHA256=<from-Hub-manifest>
 ```
 
 The Editor source is
 [`black-forest-labs/FLUX.2-klein-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/e7b7dc27f91deacad38e78976d1f2b499d76a294)
 at revision `e7b7dc27f91deacad38e78976d1f2b499d76a294`; it is not redistributed
 by MR-IQA-2. The pinned 4B Editor is Apache-2.0; retain its upstream notices
-and model-card safety guidance. Both Judge identity variables are required;
-the launcher checks them against the downloaded artifact and manifest.
+and model-card safety guidance. The launcher checks the Judge against the
+downloaded artifact and manifest.
 
 Then run:
 

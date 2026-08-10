@@ -16,7 +16,7 @@ deliberately not downloaded by either requirements file: the training launcher
 requires a prebuilt, validated wheel and checks it automatically before use.
 This prevents an unreviewed local compilation from silently changing the
 runtime. Install that wheel explicitly into the Actor/Judge environment, then
-set `FLASH_ATTN_WHEEL` and `FLASH_ATTN_WHEEL_SHA256` in the private `.env`:
+configure it in the private `.env` using `.env.example`:
 
 ```bash
 python -m pip install /path/to/validated_flash_attn.whl

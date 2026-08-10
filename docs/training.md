@@ -112,24 +112,21 @@ published manifests. At minimum, the launcher requires:
 Never commit `.env`. Do not put tokens in a training profile; profiles under
 `configs/training/` are public scientific configuration only.
 
-For a Judge downloaded from `judge/source-e5`, configure both identities and
-the provenance manifest:
+For a Judge downloaded from `judge/source-e5`, configure its local path and
+provenance manifest. Use `.env.example` for the remaining preflight fields:
 
 ```dotenv
 JUDGE_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5
 JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5/provenance.json
-JUDGE_MODEL_TREE_SHA256=<from-provenance-manifest>
-JUDGE_MODEL_EXPORT_TREE_SHA256=<from-Hub-manifest>
 ```
 
-The launcher verifies both identity fields automatically before loading the
-Judge.
+The launcher validates the configured artifact automatically before loading
+the Judge.
 
 For the portable J0 cache, the corresponding `.env` block is:
 
 ```dotenv
 ORIGINAL_SCORE_CACHE_PATH=<repository-root>/checkpoints/mr-iqa-2/training_assets/original_score_cache.sqlite
-ORIGINAL_SCORE_CACHE_SHA256=<from-Hub-manifest>
 ORIGINAL_SCORE_CACHE_EXPECTED_ROW_COUNT=10073
 ORIGINAL_SCORE_CACHE_EXPECTED_SAMPLE_COUNT=10073
 ORIGINAL_SCORE_CACHE_EXPECTED_ACTOR_IDS=source-e5-judge-step725-original-score

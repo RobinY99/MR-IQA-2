@@ -18,10 +18,10 @@ and eight visible GPUs are required for the published full training/evaluation
 topology. Smaller hardware configurations are useful for development, but are
 not equivalent to the reported run.
 
-The launchers also require a prebuilt FlashAttention wheel. Set
-`FLASH_ATTN_WHEEL` and `FLASH_ATTN_WHEEL_SHA256` in your private `.env`; the
-launcher validates the artifact automatically. Install that same wheel into
-the Actor/Judge environment before the first preflight:
+The launchers also require a prebuilt FlashAttention wheel. Configure it in
+your private `.env` using `.env.example`; the launcher validates the artifact
+automatically. Install that same wheel into the Actor/Judge environment before
+the first preflight:
 
 ```bash
 python -m pip install /path/to/validated_flash_attn.whl
