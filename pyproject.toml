@@ -12,7 +12,7 @@ Repository = "https://github.com/RobinY99/MR-IQA-2"
 Models = "https://huggingface.co/RobinY99/MR-IQA-2"
 
 [tool.pytest.ini_options]
-testpaths = ["actor/tests", "editor/tests", "judge/tests"]
+testpaths = ["actor/tests", "editor/tests", "judge/tests", "tests"]
 python_files = ["test_*.py"]
 addopts = [
   "-ra",

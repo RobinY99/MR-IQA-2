@@ -3,7 +3,8 @@
 
 Local checkpoint paths are supplied out-of-band with ``--sources``. The
 default operation is read-only. ``--materialize`` creates a new staging tree
-containing only root metadata plus ``actor/``, ``judge/``, and ``editor/``.
+containing root metadata, ``actor/``, ``judge/``, ``editor/``, and the
+published Actor-to-Editor example files from the template.
 """
 
 from __future__ import annotations
@@ -27,6 +28,13 @@ PROVENANCE_SCHEMA = "mriqa2_checkpoint_provenance_v1"
 PRODUCTION_MANIFEST_CONTENT_SHA256 = "a54f3465b30a0f63e1ced19d7a8470e24318f74a24ca93a697d96a584486ab8b"
 ROOT_TEMPLATE_FILES = (".gitattributes", "README.md")
 EXPECTED_ROOT_FILES = (".gitattributes", "README.md", "LICENSE")
+STATIC_PUBLIC_FILES = (
+    "assets/actor_editor/sample_0001/source.png",
+    "assets/actor_editor/sample_0001/edited.png",
+    "examples/actor_editor/sample_0001.json",
+)
+STATIC_TEXT_FILES = {"examples/actor_editor/sample_0001.json"}
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 EXPECTED_LAYOUT = {
     "actor": ("actor", "transformers"),
     "judge": ("judge", "transformers"),
@@ -390,6 +398,18 @@ def _copy_root_template(template: Path, destination: Path) -> None:
             raise ValueError(f"missing regular HF template file: {name}")
         _scan_public_text(source, name)
         shutil.copy2(source, destination / name)
+    for relative in STATIC_PUBLIC_FILES:
+        source = template / relative
+        if source.is_symlink() or not source.is_file():
+            raise ValueError(f"missing regular HF template static file: {relative}")
+        if relative in STATIC_TEXT_FILES:
+            _json(source)
+            _scan_public_text(source, relative)
+        elif source.read_bytes()[: len(PNG_SIGNATURE)] != PNG_SIGNATURE:
+            raise ValueError(f"HF template static image is not PNG: {relative}")
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
 
 
 def _transfer(source: Path, destination: Path, mode: str) -> None:
@@ -405,7 +425,7 @@ def _transfer(source: Path, destination: Path, mode: str) -> None:
 
 
 def _expected_public_paths(manifest: dict[str, Any]) -> set[str]:
-    paths = set(EXPECTED_ROOT_FILES)
+    paths = set(EXPECTED_ROOT_FILES) | set(STATIC_PUBLIC_FILES)
     for asset in manifest["assets"]:
         folder = asset["hub_subfolder"]
         paths.update(f"{folder}/{name}" for name in asset["required_files"])
@@ -512,7 +532,13 @@ def main() -> int:
                     "valid": True,
                     "schema_version": MANIFEST_SCHEMA,
                     "assets": [item["asset_id"] for item in assets],
-                    "public_layout": ["actor/", "judge/", "editor/"],
+                    "public_layout": [
+                        "actor/",
+                        "judge/",
+                        "editor/",
+                        "assets/actor_editor/sample_0001/",
+                        "examples/actor_editor/sample_0001.json",
+                    ],
                 },
                 indent=2,
             )
@@ -553,7 +579,7 @@ def main() -> int:
         transfer_mode=args.transfer_mode,
     )
     plan["output"] = str(args.output.resolve())
-    plan["public_file_count"] = len(_expected_public_paths(manifest))
+    plan["public_file_count"] = sum(1 for path in args.output.rglob("*") if path.is_file())
     print(json.dumps(plan, indent=2, sort_keys=True))
     return 0
 

@@ -24,6 +24,14 @@ PRODUCTION_MANIFEST_CONTENT_SHA256 = "a54f3465b30a0f63e1ced19d7a8470e24318f74a24
 COMMIT_MESSAGE = "Publish Actor, Judge, and Editor"
 EXPECTED_ROOT_FILES = (".gitattributes", "README.md", "LICENSE")
 EXPECTED_LAYOUT = {"actor": "actor", "judge": "judge", "editor": "editor"}
+STATIC_PUBLIC_FILES = (
+    "assets/actor_editor/sample_0001/source.png",
+    "assets/actor_editor/sample_0001/edited.png",
+    "examples/actor_editor/sample_0001.json",
+)
+STATIC_ROOT_ENTRIES = {path.split("/", 1)[0] for path in STATIC_PUBLIC_FILES}
+STATIC_TEXT_FILES = {"examples/actor_editor/sample_0001.json"}
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 TRANSFORMERS_REQUIRED_FILES = (
     "model-00001-of-00002.safetensors",
     "model-00002-of-00002.safetensors",
@@ -160,6 +168,10 @@ def _safe_relative(raw: object) -> str:
     return path.as_posix()
 
 
+def _remote_delete_paths(remote_paths: set[str], local_paths: set[str]) -> list[str]:
+    return sorted(remote_paths - local_paths)
+
+
 def _scan_public_text(path: Path, relative: str) -> None:
     text = path.read_text(encoding="utf-8", errors="replace")
     for pattern in PRIVATE_TEXT_PATTERNS:
@@ -267,7 +279,7 @@ def _manifest_assets(
 
 
 def _expected_paths(manifest: dict[str, Any], assets: list[dict[str, Any]]) -> set[str]:
-    expected = set(EXPECTED_ROOT_FILES)
+    expected = set(EXPECTED_ROOT_FILES) | set(STATIC_PUBLIC_FILES)
     for asset in assets:
         folder = asset["hub_subfolder"]
         expected.update(f"{folder}/{name}" for name in asset["required_files"])
@@ -339,7 +351,9 @@ def validate_release(
     assets = _manifest_assets(manifest, allow_test_payloads=allow_test_payloads)
 
     root_entries = {item.name for item in root.iterdir()}
-    expected_root_entries = set(EXPECTED_ROOT_FILES) | set(EXPECTED_LAYOUT.values())
+    expected_root_entries = (
+        set(EXPECTED_ROOT_FILES) | set(EXPECTED_LAYOUT.values()) | STATIC_ROOT_ENTRIES
+    )
     if root_entries != expected_root_entries:
         raise ValueError(
             f"root entries must be exactly {sorted(expected_root_entries)}; "
@@ -377,6 +391,13 @@ def validate_release(
         raise ValueError("root LICENSE is not the verified FLUX.2 Klein Apache-2.0 text")
     for name in EXPECTED_ROOT_FILES:
         _scan_public_text(root / name, name)
+    for relative in STATIC_PUBLIC_FILES:
+        path = root / relative
+        if relative in STATIC_TEXT_FILES:
+            _json(path)
+            _scan_public_text(path, relative)
+        elif path.read_bytes()[: len(PNG_SIGNATURE)] != PNG_SIGNATURE:
+            raise ValueError(f"static image is not PNG: {relative}")
 
     verified_count = 0
     verified_bytes = 0
@@ -467,7 +488,7 @@ def main() -> int:
         )
     }
     local_set = set(local_paths)
-    delete_paths = sorted(remote_paths - local_set)
+    delete_paths = _remote_delete_paths(remote_paths, local_set)
     operations = [CommitOperationDelete(path_in_repo=path) for path in delete_paths]
     operations.extend(
         CommitOperationAdd(

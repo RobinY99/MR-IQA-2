@@ -131,6 +131,46 @@ editor = Flux2KleinPipeline.from_pretrained(
 )
 ```
 
+## Single-image Actor to Editor example
+
+[`examples/actor_to_editor.py`](examples/actor_to_editor.py) runs the released
+Actor with the same neutral prompt contract used for validation, validates the
+structured completion, and forwards its `reasoning.solution` unchanged to a
+local FLUX.2 Klein Editor service. This example intentionally stops after the
+edit and does not run the Judge.
+
+Start one Editor service on GPU 1:
+
+```bash
+CUDA_VISIBLE_DEVICES=1 conda run --no-capture-output -n mr_iqa_editor \
+  python -m editor.server \
+  --host 127.0.0.1 \
+  --port 8212 \
+  --model-path checkpoints/mr-iqa-2/editor \
+  --output-dir outputs/actor_to_editor/editor
+```
+
+After `/health` reports `ready: true`, run the Actor on GPU 0. Both processes
+must see the same absolute image path.
+
+```bash
+CUDA_VISIBLE_DEVICES=0 conda run --no-capture-output -n mr_iqa_actor_judge \
+  python examples/actor_to_editor.py \
+  --image /absolute/path/to/source.png \
+  --actor-model checkpoints/mr-iqa-2/actor \
+  --local-files-only \
+  --editor-url http://127.0.0.1:8212 \
+  --device cuda:0 \
+  --output-dir outputs/actor_to_editor/sample_0001
+```
+
+The output directory contains the exact Actor completion and parsed JSON, the
+Editor request and response, source and edited images, and a provenance file.
+A real output from this command is published in the Hugging Face
+[`sample_0001` assets](https://huggingface.co/RobinY99/MR-IQA-2/tree/main/assets/actor_editor/sample_0001)
+and its
+[`sample_0001.json`](https://huggingface.co/RobinY99/MR-IQA-2/blob/main/examples/actor_editor/sample_0001.json).
+
 ## Eight-GPU deployment
 
 The launchers use a fixed single-host topology. During training, four Actor

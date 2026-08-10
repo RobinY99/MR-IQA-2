@@ -75,6 +75,20 @@ class HuggingFaceReleaseToolTests(unittest.TestCase):
         (self.template / ".gitattributes").write_text(
             "*.safetensors filter=lfs diff=lfs merge=lfs -text\n", encoding="utf-8"
         )
+        self.static_source = (
+            self.template / "assets" / "actor_editor" / "sample_0001" / "source.png"
+        )
+        self.static_edited = self.static_source.with_name("edited.png")
+        self.static_sample = (
+            self.template / "examples" / "actor_editor" / "sample_0001.json"
+        )
+        self.static_source.parent.mkdir(parents=True)
+        self.static_sample.parent.mkdir(parents=True)
+        self.static_source.write_bytes(EXPORTER.PNG_SIGNATURE + b"source-fixture")
+        self.static_edited.write_bytes(EXPORTER.PNG_SIGNATURE + b"edited-fixture")
+        self.static_sample.write_text(
+            '{"sample_id":"sample_0001"}\n', encoding="utf-8"
+        )
         self.output = self.root / "staging"
 
     def tearDown(self) -> None:
@@ -117,14 +131,78 @@ class HuggingFaceReleaseToolTests(unittest.TestCase):
         self.assertTrue(result["valid"])
         self.assertEqual(result["asset_count"], 3)
         self.assertEqual(result["runtime_file_count"], 38)
-        self.assertEqual(result["public_file_count"], 43)
+        self.assertEqual(result["public_file_count"], 46)
         self.assertEqual(
             {item.name for item in self.output.iterdir()},
-            {".gitattributes", "README.md", "LICENSE", "actor", "judge", "editor"},
+            {
+                ".gitattributes",
+                "README.md",
+                "LICENSE",
+                "actor",
+                "judge",
+                "editor",
+                "assets",
+                "examples",
+            },
         )
         self.assertFalse((self.output / "checkpoint_manifest.json").exists())
         self.assertFalse((self.output / "SHA256SUMS.full").exists())
         self.assertFalse((self.output / "export_report.json").exists())
+
+    def test_actor_editor_static_paths_are_materialized_and_accepted(self) -> None:
+        self.materialize()
+        result = UPLOADER.validate_release(
+            self.output,
+            self.manifest,
+            allow_test_payloads=True,
+        )
+
+        self.assertEqual(result["public_file_count"], 46)
+        self.assertEqual(
+            (self.output / self.static_source.relative_to(self.template)).read_bytes(),
+            EXPORTER.PNG_SIGNATURE + b"source-fixture",
+        )
+        self.assertEqual(
+            (self.output / self.static_edited.relative_to(self.template)).read_bytes(),
+            EXPORTER.PNG_SIGNATURE + b"edited-fixture",
+        )
+        self.assertEqual(
+            (self.output / self.static_sample.relative_to(self.template)).read_text(
+                encoding="utf-8"
+            ),
+            '{"sample_id":"sample_0001"}\n',
+        )
+
+    def test_uploader_rejects_paths_outside_approved_static_prefixes(self) -> None:
+        self.materialize()
+        unapproved = self.output / "examples" / "actor_editor" / "credentials.env"
+        unapproved.parent.mkdir(parents=True, exist_ok=True)
+        unapproved.write_text("HF_TOKEN=hf_not_a_real_token_but_must_be_rejected\n", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "extra"):
+            UPLOADER.validate_release(
+                self.output,
+                self.manifest,
+                allow_test_payloads=True,
+            )
+
+    def test_remote_replacement_deletes_every_path_absent_from_verified_tree(self) -> None:
+        remote = {
+            "README.md",
+            "actor/config.json",
+            "assets/actor_editor/sample_0001/source.png",
+            "examples/actor_editor/sample_0001.json",
+            "obsolete.bin",
+        }
+        local = {"README.md", "actor/config.json"}
+
+        self.assertEqual(
+            UPLOADER._remote_delete_paths(remote, local),
+            [
+                "assets/actor_editor/sample_0001/source.png",
+                "examples/actor_editor/sample_0001.json",
+                "obsolete.bin",
+            ],
+        )
 
     def test_uploader_rejects_completion_cache_and_any_other_extra_path(self) -> None:
         self.materialize()
