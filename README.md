@@ -7,33 +7,20 @@
   <a href="docs/checkpoints.md">Checkpoints and results</a>
 </p>
 
-MR-IQA-2 studies how token-level reward credit and KL regularization affect a
-multimodal Actor that predicts image-quality evidence, an edit solution, and a
-numeric rating. A frozen image Editor applies only the proposed `solution`, and
-a frozen E5 Judge measures the quality change. The repository releases the
-training integrations, four controlled training modes, relative-path data
-manifests, validation/generalization runners, and provenance checks used by the
-experiments.
+MR-IQA-2 trains a multimodal Actor to produce image-quality evidence, an edit
+solution, and a numeric rating. A frozen Editor applies the solution and a
+frozen E5 Judge measures the quality change.
 
 > **Recommended release:** use the field-credit E5 Actor. The completion-wide
-> E5 Actor is retained only as a diagnostic ablation because its solution field
-> collapsed; the intermediate E4 checkpoint is not released.
+> E5 Actor is a diagnostic ablation.
 
-## What is released
+## Repository contents
 
-- `actor/`: GRPO Actor plugin, reward and KL routing, four-rank trajectory I/O,
-  training stage, and eight-shard inference.
-- `editor/`: frozen FLUX.2 Editor service and client. **Editor training is not
-  included**; the Editor is an external frozen service throughout this work.
-- `judge/`: deterministic frozen E5 Judge service and checkpoint contract.
-- `global/`: cross-role reward, KL, orchestration, and provenance contracts.
-- `configs/training/`: two formal modes and two 30-step no-KL ablations.
-- `data/`: one 7,000-row training manifest, one 200-row validation manifest,
-  and six test manifests totaling 28,270 rows. Images are not redistributed.
-- `environment/` and `requirements/`: separate, pinned Actor/Judge and Editor
-  Python 3.12.13 environments.
-- `scripts/`: public training, Actor-only evaluation, full
-  Actor→Editor→Judge evaluation, and release checks.
+- `actor/`, `editor/`, `judge/`, `global/`: model roles and orchestration.
+- `configs/training/`: two formal modes and two 30-step ablations.
+- `data/`: 7,000 training rows, 200 validation rows, and 28,270 test rows.
+- `environment/`, `requirements/`, `scripts/`: setup, training, evaluation,
+  and verification.
 
 Model artifacts are distributed from
 [huggingface.co/RobinY99/MR-IQA-2](https://huggingface.co/RobinY99/MR-IQA-2).
@@ -57,11 +44,9 @@ flowchart LR
     K --> A
 ```
 
-The formal training topology uses four Actor GPUs and four Editor/Judge service
-GPUs. Every optimizer update merges 36 trajectories from each Actor rank for
-144 global trajectories. Each formal epoch contains 291 optimizer updates;
-five epochs reach global step 1,455. The ViT and multimodal aligner stay frozen
-in every released mode.
+Formal training uses four Actor GPUs and four Editor/Judge service GPUs. Each
+update merges 4×36=144 trajectories. Five 291-update epochs reach step 1,455.
+The ViT and multimodal aligner remain frozen.
 
 ## Training modes
 
@@ -72,16 +57,14 @@ in every released mode.
 | `field_nokl_30step` | Parsed field | none | 30 steps | Short controlled ablation |
 | `completion_nokl_30step` | Entire eligible completion | none | 30 steps | Short controlled ablation |
 
-The exact machine-readable contracts are in
-[`configs/training/mode_matrix.json`](configs/training/mode_matrix.json). See
-[`global/contracts/reward_and_kl.md`](global/contracts/reward_and_kl.md) before
-changing a mask or KL mode.
+Exact contracts are in
+[`configs/training/mode_matrix.json`](configs/training/mode_matrix.json) and
+[`global/contracts/reward_and_kl.md`](global/contracts/reward_and_kl.md).
 
 ## Quick start
 
-The full workflow targets Linux, CUDA 13.0, and eight visible NVIDIA GPUs. A
-CPU machine can run release and contract tests but cannot reproduce the full
-training topology.
+Full training and evaluation require Linux, CUDA 13.0, and eight visible
+NVIDIA GPUs.
 
 ```bash
 git clone https://github.com/RobinY99/MR-IQA-2.git
@@ -97,8 +80,7 @@ conda run -n mr_iqa_actor_judge \
   python -m pip install -r requirements/actor-judge.txt
 conda run -n mr_iqa_editor \
   python -m pip install -r requirements/editor.txt
-# Install the separately obtained, validated FlashAttention wheel into the
-# Actor/Judge environment as documented in environment/README.md.
+# Install the FlashAttention wheel documented in environment/README.md.
 
 python -m pip install -r requirements/publish.txt
 huggingface-cli download Qwen/Qwen3.5-4B \
@@ -115,14 +97,7 @@ bash scripts/test_release.sh --static
 bash scripts/train.sh --mode field_component_kl002 --print-plan
 ```
 
-Install the pinned packages and run the dependency-backed CPU tests as
-described in [`environment/README.md`](environment/README.md). Download the
-weights at an immutable Hugging Face revision, copy the artifact settings from
-`.env.example`, and do not commit `.env`. The initial Actor is the Apache-2.0
-[`Qwen/Qwen3.5-4B`](https://huggingface.co/Qwen/Qwen3.5-4B/tree/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a)
-revision shown above.
-
-Point the runtime at the downloaded Judge and portable J0 cache:
+Point the runtime at the downloaded Judge and J0 cache:
 
 ```dotenv
 JUDGE_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5
@@ -130,10 +105,7 @@ JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5/prove
 ORIGINAL_SCORE_CACHE_PATH=<repository-root>/checkpoints/mr-iqa-2/training_assets/original_score_cache.sqlite
 ```
 
-Keep the remaining identity and cache-contract variables from `.env.example`
-unchanged. The launcher validates them automatically. The portable cache
-contains 10,073 source scores and no ground truth, raw Judge completion,
-reasoning text, image bytes, or private absolute paths.
+Keep the remaining variables from `.env.example`; the launcher validates them.
 
 Validate the complete local configuration before loading a model:
 
@@ -158,23 +130,10 @@ export VF_MIN_FREE_GIB=500
 bash scripts/train.sh --mode field_component_kl002
 ```
 
-The formal launcher chains five 291-update epochs, resumes each epoch from the
-previous checkpoint, and runs the complete 200-row validation between epochs.
-Each epoch moves `quarantined → technically_valid → promoted` only after the
-complete 200-row, eight-shard Actor→Editor barrier→Judge observational gate;
-the next epoch resolves only that promoted manifest, while
-`--skip-validation --epochs 1` deliberately leaves an unpromoted checkpoint
-that cannot seed another epoch.
-Never reuse a `RUN_ID` or an existing output directory. `OUTPUT_ROOT` and
-`VF_STORAGE_ROOT` must resolve to the same new location on storage with enough
-free capacity; 500 GiB is the recommended formal preflight threshold.
-`VF_MIN_FREE_GIB` may be lowered for a one-update smoke only after checking the
-host's actual needs.
-
-`WANDB_MODE=offline` is supported and is the reproducible default. Set
-`WANDB_MODE=online` only when remote tracking is desired and credentials are
-configured outside the repository. The smoke path disables W&B internally.
-All other machine-specific values stay in `.env`.
+Use a new `RUN_ID` and output directory for every launch. Formal training runs
+five 291-update epochs and validates all 200 rows between epochs. Only a
+`promoted` checkpoint can seed the next epoch. `WANDB_MODE=offline` is the
+default.
 
 ## Evaluation
 
@@ -188,9 +147,8 @@ EVAL_IMAGE_ROOT=<dataset-image-root> \
 bash scripts/evaluate.sh test
 ```
 
-Full evaluation preserves the original sequence: eight-shard Actor inference,
-a complete Editor barrier, then the frozen E5 Judge. Configure the Editor,
-Judge, and original-score cache in `.env`, then run:
+Full evaluation uses eight-shard Actor inference, a complete Editor barrier,
+then the frozen E5 Judge:
 
 ```bash
 ACTOR_MODEL_PATH=<actor-checkpoint> \
@@ -202,9 +160,8 @@ EVAL_IMAGE_ROOT=<dataset-image-root> \
 bash scripts/evaluate.sh test
 ```
 
-Use `all` to run validation plus all six test datasets. See
-[`docs/evaluation.md`](docs/evaluation.md) for output files, resume behavior,
-and metric interpretation.
+Use `all` for validation plus all six test datasets. See
+[`docs/evaluation.md`](docs/evaluation.md).
 
 ## Released checkpoints
 
@@ -214,8 +171,7 @@ and metric interpretation.
 | Field Actor E5 | 1,455 | 0.935394 / 0.919533 / 0.354589 | **Recommended; best/final** |
 | Completion Actor E5 | 1,455 | 0.928980 / 0.915821 / 0.997127 | Diagnostic final; collapsed |
 
-The E4 completion checkpoint is intentionally excluded from the model release.
-Full training history and released six-dataset results are in
+Full training history and six-dataset results are in
 [`docs/checkpoints.md`](docs/checkpoints.md).
 
 ## Reproducibility and safety checks
@@ -228,44 +184,15 @@ bash scripts/test_release.sh --static
 bash scripts/test_release.sh
 ```
 
-Training additionally audits four-rank shard completeness, optimizer and
-scheduler update counts, reward/KL finiteness, and KL application counts. For
-the completion-global mode, every valid update must apply global completion KL
-exactly once and component KL zero times.
-
-## Limitations
-
-- The two formal runs change both reward-credit routing and KL routing. With
-  one seed per configuration, they do not identify either change as a sole
-  causal factor.
-- The completion-wide run collapses to a generic house-edit solution even
-  though rating PLCC/SRCC remain high. Rating correlation is not a proxy for
-  grounded solution diversity.
-- Field credit avoids the catastrophic house-solution collapse in this run,
-  but still develops a frequent lexical editing skeleton. Field masks mitigate
-  cross-field credit leakage; they do not guarantee semantic grounding.
-- The quality Judge scores visual quality change, not source-image semantic
-  fidelity. Downstream work should add relevance checks or semantic
-  guardrails.
-- Images, the frozen Editor, upstream base weights, and some runtime artifacts
-  are not redistributed by the GitHub source repository. Obtain them under
-  their own licenses and verify their provenance.
-- The initial Qwen Actor is Apache-2.0. The frozen
-  [`black-forest-labs/FLUX.2-klein-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/e7b7dc27f91deacad38e78976d1f2b499d76a294)
-  Editor at revision `e7b7dc27f91deacad38e78976d1f2b499d76a294` is not
-  redistributed by this repository; the pinned 4B model is Apache-2.0 and
-  users should retain its upstream notices and usage guidance.
-
-See [`docs/reproducibility.md`](docs/reproducibility.md) and
-[`docs/privacy.md`](docs/privacy.md) for the complete release boundary.
+Training audits shard completeness, update counts, finite rewards/KL, and KL
+application counts. Completion-global mode requires one global-completion KL
+application and zero component-KL applications per valid update.
 
 ## License and citation
 
-The original code in this repository is released under the MIT License. Model
-weights, datasets, dependencies, and the frozen Editor remain subject to their
-respective upstream terms. The Qwen-derived Actor/Judge weights are Apache-2.0;
-the non-redistributed FLUX.2-klein-4B Editor at the pinned revision above is
-also Apache-2.0. See
+Original code is MIT licensed. Model weights, datasets, dependencies, and the
+frozen Editor retain their upstream terms. Qwen-derived Actor/Judge weights
+and the pinned FLUX.2-klein-4B Editor are Apache-2.0. See
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 Please cite the software metadata in [`CITATION.cff`](CITATION.cff). If you use

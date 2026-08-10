@@ -1,8 +1,6 @@
 # Data manifests
 
-The repository distributes metadata manifests, not dataset images. All image
-locations are relative paths so one release can be used with independently
-obtained datasets on different machines.
+The repository distributes relative-path metadata manifests, not images.
 
 ## Inventory
 
@@ -45,33 +43,22 @@ id, dataset, image, source_image, normalized_score, gt_score_norm,
 source_score, gt_score, std, std_norm
 ```
 
-Some score aliases are retained so dataset-specific source values and the
-normalized comparison value remain auditable. Evaluation uses the normalized
-quality target declared by its parser contract.
-
 ## Image layout
 
 Set `TRAIN_IMAGE_ROOT` and `EVAL_IMAGE_ROOT` in `.env`. The path stored in a row
 is joined to the corresponding root. Release checks reject absolute image paths
 and parent-directory traversal.
 
-Datasets do not necessarily share the same folder layout. Construct a single
-evaluation root whose subpaths match the committed `image` fields, or create a
-read-only view with the same relative layout. Do not edit a manifest merely to
-encode a private machine path.
+The directory under each root must match the committed relative paths.
 
 ## Redistribution and ethics
 
-The JSONL manifests do not grant rights to the source images. Obtain each
-dataset from its official distributor, review its research/commercial-use
-terms, and comply with attribution, privacy, and deletion requirements. Do not
-publish edited images or raw model outputs without considering whether the
-source content includes people, private places, or other sensitive material.
+Obtain source images from official distributors and follow their licenses,
+attribution, privacy, and deletion requirements.
 
 When creating a new manifest:
 
-1. confirm that redistribution of its metadata is permitted;
-2. use stable, non-identifying sample IDs where possible;
-3. keep image paths relative;
-4. record score normalization and split construction;
-5. run `bash scripts/test_release.sh --static`.
+1. confirm metadata redistribution rights;
+2. use stable, non-identifying IDs and relative paths;
+3. record score normalization and split construction;
+4. run `bash scripts/test_release.sh --static`.

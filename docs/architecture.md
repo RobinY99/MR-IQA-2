@@ -1,7 +1,6 @@
 # Architecture and role boundaries
 
-MR-IQA-2 separates the trainable policy from two frozen services. This split is
-part of the experiment, not only an implementation detail.
+MR-IQA-2 separates one trainable Actor from a frozen Editor and Judge.
 
 ## Actor
 
@@ -18,44 +17,32 @@ completion:
 }
 ```
 
-The plugin parses the fields, records token spans and eligibility, computes
-format/rating/reasoning/soft-overlong rewards, and routes those rewards to
-tokens according to the selected training profile. The ViT and multimodal
-aligner remain frozen; updates apply to the language-model part of the Actor.
+The plugin parses field spans, computes format/rating/reasoning/soft-overlong
+rewards, and routes them according to the selected profile. The ViT and
+multimodal aligner remain frozen.
 
 ## Editor
 
 The Editor is a separately installed, frozen
 [`black-forest-labs/FLUX.2-klein-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/e7b7dc27f91deacad38e78976d1f2b499d76a294)
 service at revision `e7b7dc27f91deacad38e78976d1f2b499d76a294`. It consumes
-the Actor's `reasoning.solution` text only. Evidence and rating are never
-appended to the edit prompt. MR-IQA-2 includes the service adapter and client
-contract, but it does not include Editor training or Editor weights. Users
-obtain the model independently. The pinned 4B checkpoint is Apache-2.0; its
-upstream notices and model-card safety guidance still apply.
-
-The output image is normalized back to the source dimensions when required,
-and its identity, size, seed, runtime, and service status are recorded. Full
-evaluation completes every edit before unloading the Editor and starting the
-Judge.
+only `reasoning.solution`. Obtain its Apache-2.0 weights from the upstream
+repository. Full evaluation completes all edits before starting the Judge.
 
 ## Judge
 
 The frozen source E5 Judge is deterministic under the published sampling
 contract. It evaluates the original image (`J0`) and the edited image (`J1`).
-Original-image scores are served from a validated cache during training; edited
-images are judged online. The reasoning delta is:
+Original-image scores use a validated cache during training; edited images are
+judged online. The reward is:
 
 ```text
 delta = J1 - J0
 reasoning_raw_reward = sign(delta) * (1 - exp(-(delta^2) / 2))
 ```
 
-The launcher and preflight automatically validate the Judge model, prompt,
-score cache, schema, and accepted rating interval against their published
-manifests. A successful Editor/Judge call does not by itself prove semantic
-faithfulness: the Judge measures perceived quality change, while the released
-contract contains no independent image–solution relevance Judge.
+The launcher validates the Judge, prompt, score cache, schema, and rating
+interval against their manifests.
 
 ## Global orchestration
 
@@ -70,15 +57,11 @@ Actor GPU 3: 36 rows ---/
 Service GPUs 4..7: one Editor endpoint + one frozen-Judge endpoint per lane
 ```
 
-Each rank draws six completions for each of six images. The learner first
-computes local same-image group quantities, then follows the declared global
-gather order. W&B reward keys emitted by rank 0 are local diagnostics; the
-scientific per-step trajectory is the merge of all four 36-row shards.
+Each rank draws six completions for each of six images. Per-step metrics merge
+all four 36-row shards; W&B rank-0 reward keys are local diagnostics.
 
-The full offline evaluator uses all eight GPUs for Actor inference, waits for
-all Actor shards, uses all eight service lanes for editing, enforces a complete
-Editor barrier, and then starts the frozen Judge. This ordering prevents an
-Editor and Judge from contending for the same GPU memory.
+Offline evaluation uses all eight GPUs for Actor inference and editing,
+enforces the Editor barrier, then starts the Judge.
 
 ## Credit and KL modes
 
@@ -97,9 +80,7 @@ One sampled-K3 global completion KL with beta 0.02 is applied on the loss side,
 exactly once per optimizer update. `kl_in_reward=false`: the KL is not subtracted
 from trajectory rewards.
 
-The two no-KL 30-step modes independently switch only the credit scope. Their
-short duration makes them pipeline and routing checks, not replacements for the
-formal runs.
+The two no-KL modes run 30-step field/completion credit checks.
 
 See [`../global/contracts/reward_and_kl.md`](../global/contracts/reward_and_kl.md)
 for the executable contract and

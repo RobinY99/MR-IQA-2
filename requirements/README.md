@@ -1,8 +1,6 @@
 # Requirements
 
-MR-IQA-2 uses separate environments because the Actor/Judge and Editor stacks
-have different validated `transformers` and `accelerate` versions. Mixing these
-files into one environment is unsupported.
+Actor/Judge and Editor use separate environments.
 
 | File | Purpose | GPU required |
 | --- | --- | --- |
@@ -11,12 +9,8 @@ files into one environment is unsupported.
 | `test.txt` | Static checks and CPU contract tests | No |
 | `publish.txt` | Hugging Face upload tooling | No |
 
-The production files use the CUDA 13.0 PyTorch wheel index. FlashAttention is
-deliberately not downloaded by either requirements file: the training launcher
-requires a prebuilt, validated wheel and checks it automatically before use.
-This prevents an unreviewed local compilation from silently changing the
-runtime. Install that wheel explicitly into the Actor/Judge environment, then
-configure it in the private `.env` using `.env.example`:
+Install the compatible FlashAttention wheel into Actor/Judge and configure it
+through `.env.example`:
 
 ```bash
 python -m pip install /path/to/validated_flash_attn.whl
@@ -32,5 +26,4 @@ python -m pip install torch==2.11.0 \
 bash scripts/test_release.sh
 ```
 
-The CPU wheel matches the published PyTorch version but omits CUDA libraries.
 See `environment/README.md` for the exact GPU environment setup.

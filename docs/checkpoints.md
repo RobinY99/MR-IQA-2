@@ -13,22 +13,11 @@ training/evaluation contract, and the final completion-wide ablation.
 | `actor-field-e5-step1455` | Field credit + component KL 0.02/0.02 | 1,455 | 0.935394 / 0.919533 / 0.354589 | **Recommended Actor; best/final** |
 | `actor-completion-e5-step1455` | Completion credit + global KL 0.02 | 1,455 | 0.928980 / 0.915821 / 0.997127 | Diagnostic final; solution collapsed |
 
-The three inference-only model directories contain 30 model files and total
-27,296,068,674 bytes. The E4 completion checkpoint is not part of the public
-model release. Its validation row remains below only as part of the complete
-five-epoch training history.
-
-The completion E5 model is retained to reproduce the negative result. It
-produces the same generic house-edit instruction on every row of the
-six-dataset evaluation and is not a recommended deployment model.
-
 ## Checkpoint promotion
 
-Each formal epoch starts in `quarantined`, advances to `technically_valid`
-after trainer, artifact, trajectory, and provenance checks, and becomes
-`promoted` only after the complete 200-row, eight-shard
-Actor→Editor barrier→Judge validation. The next epoch resolves only a promoted
-manifest with `usable=true`.
+Each epoch advances `quarantined → technically_valid → promoted` after its
+complete 200-row, eight-shard Actor→Editor barrier→Judge validation. Only a
+promoted manifest can seed the next epoch.
 
 The public launchers verify the selected model files automatically. Users
 normally need only configure `.env` and run:
@@ -37,18 +26,13 @@ normally need only configure `.env` and run:
 bash scripts/train.sh --mode field_component_kl002 --validate-config
 ```
 
-`--skip-validation` is permitted only with `--epochs 1`; it intentionally
-leaves an unpromoted checkpoint that cannot seed a later epoch.
+`--skip-validation --epochs 1` leaves an unpromoted checkpoint.
 
 ## Portable training asset
 
 | Hub path | Bytes | Rows / samples | Schema |
 | --- | ---: | ---: | --- |
 | `training_assets/original_score_cache.sqlite` | 15,003,648 | 10,073 / 10,073 | `vf_original_score_cache_e5_judge_e5prompt_portable_v1` |
-
-The portable J0 cache contains relative image paths and deterministic source
-scores. It contains no ground-truth scores, image bytes, raw Judge completions,
-reasoning fields, credentials, or private absolute paths.
 
 ## Five-epoch validation history
 
@@ -113,15 +97,9 @@ ratings for their denominator.
 | Field E5 | 28,044 / 28,270 | 2.851875 | 3.922885 | 1.071010 | 0.401480 | 23,457 | 51 / 28,044 | 0 / 28,044 |
 | Completion E5 | 28,270 / 28,270 | 2.854820 | 4.285586 | 1.430766 | 0.536715 | 1 | 28,270 / 28,270 | 28,270 / 28,270 |
 
-Completion E5 applies one identical solution to different source images. The
-edited images remain different, but that does not demonstrate image-conditioned
-solution reasoning.
-
-Field E5 does not exhibit the house-family or whole-sentence collapse. It is
-not template-free: a `super-resolution` + `super-smooth` lexical skeleton
-appears in 28,022 of 28,044 eligible solutions (99.9216%). Field masking
-mitigates catastrophic cross-field collapse but does not guarantee diverse or
-semantically optimal edits.
+Field E5 has 23,457 normalized solutions; its `super-resolution` +
+`super-smooth` lexical skeleton appears in 28,022/28,044 eligible solutions
+(99.9216%). Completion E5 has one normalized solution across 28,270 rows.
 
 ## Collapse milestones
 
@@ -140,12 +118,5 @@ normalization, and whitespace collapse.
 | 552 | E2 / 261 | One normalized solution first reaches at least 95% | 138 / 144 (95.8333%) |
 | 973 | E4 / 100 | One normalized solution begins its uninterrupted at-least-90% period through E5 | audited series |
 
-Semantic house collapse therefore precedes exact lexical collapse. The
-completion-wide run broadcasts a high-yield solution reward across evidence,
-rating, format, and solution tokens; its global completion KL does not
-specifically preserve solution grounding. The field run localizes rewards and
-KL by field and avoids the catastrophic house solution in this comparison.
-
-This is descriptive evidence from a joint intervention with one seed per
-mode. A causal follow-up requires the complete credit-scope × KL-scope design
-with multiple seeds.
+Semantic house collapse precedes exact lexical collapse. The field run does
+not show this house-solution collapse.

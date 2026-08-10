@@ -1,8 +1,6 @@
 # Released experiment evidence
 
-This directory contains path-free, derived evidence from the two five-epoch
-formal runs. It is provided so reported behavior can be audited without access
-to private infrastructure or raw images.
+This directory contains exported metrics from both five-epoch formal runs.
 
 - `step_metrics_fieldmask_kl002_e5.csv`: all 1,455 optimizer-step metrics for
   field credit + component KL 0.02.
@@ -15,6 +13,5 @@ to private infrastructure or raw images.
   results for the released Field E5 and Completion E5 checkpoints.
 - `collapse_milestones.csv`: measured solution-collapse threshold crossings.
 
-The files are regenerated with `scripts/export_public_results.py`. The export
-drops absolute checkpoint/model/data paths but does not alter metric values.
-`manifest.json` records the released file inventory and row counts.
+Regenerate them with `scripts/export_public_results.py`; `manifest.json` records
+file row counts.

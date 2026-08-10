@@ -1,8 +1,6 @@
 # Environment setup
 
-The validated release uses two isolated Python 3.12.13 environments. The
-Actor and frozen Judge share one runtime; the FLUX.2 Editor runs in a second
-runtime. This separation is part of the experiment contract.
+Use separate Python 3.12.13 environments for Actor/Judge and Editor.
 
 ## Actor and Judge
 
@@ -13,10 +11,8 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements/actor-judge.txt
 ```
 
-The requirements select PyTorch's CUDA 13.0 wheels. A compatible NVIDIA driver
-and eight visible GPUs are required for the published full training/evaluation
-topology. Smaller hardware configurations are useful for development, but are
-not equivalent to the reported run.
+Full training/evaluation requires a CUDA 13.0-compatible driver and eight
+visible NVIDIA GPUs.
 
 The launchers also require a prebuilt FlashAttention wheel. Configure it in
 your private `.env` using `.env.example`; the launcher validates the artifact
@@ -28,9 +24,7 @@ python -m pip install /path/to/validated_flash_attn.whl
 python -c 'import flash_attn; print(flash_attn.__version__)'
 ```
 
-The wheel must match the published Python, PyTorch, and CUDA ABI. The repository
-does not redistribute it and does not compile an unpinned replacement during a
-run.
+The wheel must match the Python, PyTorch, and CUDA ABI.
 
 ## Editor
 
@@ -43,9 +37,7 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements/editor.txt
 ```
 
-Alternatively, create a Python 3.12 virtual environment and install the same
-requirements file. Set `DIFFUSERS_VENV` to that environment and
-`DIFFUSERS_MODEL_PATH` to the downloaded Editor checkpoint.
+Set `DIFFUSERS_VENV` and `DIFFUSERS_MODEL_PATH` in `.env`.
 
 ## CPU release checks
 
@@ -62,17 +54,12 @@ python -m pip install torch==2.11.0 \
 bash scripts/test_release.sh
 ```
 
-Use `bash scripts/test_release.sh --static` when PyTorch or Pillow are not yet
-installed. The static mode still checks JSONL integrity and schemas, Python
-and shell syntax, forbidden checkpoint blobs, unsafe symlinks, and common
-private path or credential patterns.
+Use `bash scripts/test_release.sh --static` before installing test dependencies.
 
 ## Configuration and provenance
 
-Copy `.env.example` to `.env` and fill in local paths. Never commit `.env`, API
-tokens, private model paths, generated images, or original-score caches. Each
-published checkpoint is validated against its Hugging Face manifest by the
-launcher/preflight before training or evaluation.
+Copy `.env.example` to `.env` and fill in local paths. Never commit `.env` or
+tokens. Launchers validate configured artifacts automatically.
 
 Capture a sanitized runtime manifest alongside every run without recording a
 hostname, username, or local path:
