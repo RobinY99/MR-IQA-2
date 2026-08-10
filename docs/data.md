@@ -6,25 +6,19 @@ obtained datasets on different machines.
 
 ## Inventory
 
-| File | Split | Rows | SHA-256 |
-| --- | --- | ---: | --- |
-| `train.jsonl` | Training mixture | 7,000 | `1d624d869721331b9831748c2d60833714ff31ae3c8496a176d5d5c37456b8fb` |
-| `validation.jsonl` | Fixed validation | 200 | `c48e0f3ea7de63127a10bcd3b898d194a634f2bef6a9c22139d1d42102966f54` |
-| `koniq.jsonl` | KonIQ-10K test | 2,010 | `d0a8f0369f2b1f6477587a00f39e738c628fd9dc33766a89fec2262afd33e5ae` |
-| `spaq_full.jsonl` | SPAQ test | 11,125 | `31bd47569f8f06687bc34dfb18af91b6f8ed28742605571ae1f2b838fb4e08ae` |
-| `livew.jsonl` | LIVE-W test | 1,162 | `63fc4cca655f9461e5e44ebc9afea4fbc98fbcf969fa325f58fbbdac9c778517` |
-| `kadid_full.jsonl` | KADID-10K test | 10,125 | `67d0aa59d5d9f0d64434fc57e4aba8c3612c7996e4201d365853fc0d146d0a02` |
-| `agiqa3k.jsonl` | AGIQA-3K test | 2,982 | `c9111eaa15b7a1a9cb5be939d5390803371c52c1d538ce36e0089a61eff7e0b3` |
-| `csiq.jsonl` | CSIQ test | 866 | `164ecbc68c1e4051be0a95f519444602bae392daf28192ede75f87d519e5c57a` |
+| File | Split | Rows |
+| --- | --- | ---: |
+| `train.jsonl` | Training mixture | 7,000 |
+| `validation.jsonl` | Fixed validation | 200 |
+| `koniq.jsonl` | KonIQ-10K test | 2,010 |
+| `spaq_full.jsonl` | SPAQ test | 11,125 |
+| `livew.jsonl` | LIVE-W test | 1,162 |
+| `kadid_full.jsonl` | KADID-10K test | 10,125 |
+| `agiqa3k.jsonl` | AGIQA-3K test | 2,982 |
+| `csiq.jsonl` | CSIQ test | 866 |
 
 The six test manifests total exactly 28,270 rows. Validation is separate, so
 `scripts/evaluate.sh all` processes 28,470 rows.
-
-Verify from inside `data/` because the checksum file contains basenames:
-
-```bash
-(cd data && sha256sum -c checksums.sha256)
-```
 
 ## Schemas
 
@@ -80,5 +74,4 @@ When creating a new manifest:
 2. use stable, non-identifying sample IDs where possible;
 3. keep image paths relative;
 4. record score normalization and split construction;
-5. update `checksums.sha256`;
-6. run `bash scripts/test_release.sh --static`.
+5. run `bash scripts/test_release.sh --static`.

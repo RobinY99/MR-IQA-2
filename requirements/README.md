@@ -13,10 +13,10 @@ files into one environment is unsupported.
 
 The production files use the CUDA 13.0 PyTorch wheel index. FlashAttention is
 deliberately not downloaded by either requirements file: the training launcher
-requires a prebuilt, validated wheel and verifies its SHA-256 digest before use.
+requires a prebuilt, validated wheel and checks it automatically before use.
 This prevents an unreviewed local compilation from silently changing the
-runtime. Install that verified wheel explicitly into the Actor/Judge
-environment, then record its path and digest in the private `.env`:
+runtime. Install that wheel explicitly into the Actor/Judge environment, then
+set `FLASH_ATTN_WHEEL` and `FLASH_ATTN_WHEEL_SHA256` in the private `.env`:
 
 ```bash
 python -m pip install /path/to/validated_flash_attn.whl

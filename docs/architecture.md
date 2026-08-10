@@ -35,7 +35,7 @@ obtain the model independently. The pinned 4B checkpoint is Apache-2.0; its
 upstream notices and model-card safety guidance still apply.
 
 The output image is normalized back to the source dimensions when required,
-and its digest, size, seed, runtime, and service status are recorded. Full
+and its identity, size, seed, runtime, and service status are recorded. Full
 evaluation completes every edit before unloading the Editor and starting the
 Judge.
 
@@ -51,20 +51,11 @@ delta = J1 - J0
 reasoning_raw_reward = sign(delta) * (1 - exp(-(delta^2) / 2))
 ```
 
-The source semantic identity, public-export integrity digest, prompt digest,
-score-cache digest, schema, and accepted rating interval are checked before a
-formal run. These two Judge tree values are intentionally distinct:
-
-- `JUDGE_MODEL_TREE_SHA256=e25415173aacf515e97d5d561c6647a7a84f586061f3a9b2ab3fc079fe21be0a`
-  is the source full-checkpoint semantic/cache identity carried by
-  `judge/source-e5/provenance.json`;
-- `JUDGE_MODEL_EXPORT_TREE_SHA256=21b232a1a30dc765f3e7cf16c00fd270e4be354615fea0120e32f975e2777e5c`
-  is the integrity digest recomputed over the public ten-file Hub export.
-
-The protocol verifies both and does not relabel the reduced public snapshot as
-the source full tree. A successful Editor/Judge call does not by itself prove
-semantic faithfulness: the Judge measures perceived quality change, while the
-released contract contains no independent image–solution relevance Judge.
+The launcher and preflight automatically validate the Judge model, prompt,
+score cache, schema, and accepted rating interval against their published
+manifests. A successful Editor/Judge call does not by itself prove semantic
+faithfulness: the Judge measures perceived quality change, while the released
+contract contains no independent image–solution relevance Judge.
 
 ## Global orchestration
 

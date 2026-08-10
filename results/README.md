@@ -12,16 +12,9 @@ to private infrastructure or raw images.
 - `validation_checkpoint_metrics.csv`: all 10 formal validation checkpoints;
   the machine-specific checkpoint path column is removed.
 - `generalization_exact_summary.csv`: exact six-dataset Actor/Editor/Judge
-  results for the released Field E5 and Completion E4/E5 checkpoints.
+  results for the released Field E5 and Completion E5 checkpoints.
 - `collapse_milestones.csv`: measured solution-collapse threshold crossings.
 
 The files are regenerated with `scripts/export_public_results.py`. The export
 drops absolute checkpoint/model/data paths but does not alter metric values.
-`manifest.json` records row counts and SHA256 hashes.
-
-The checkpoint tree column in `validation_checkpoint_metrics.csv` is the
-**source full checkpoint promotion digest** from the training run. It is not
-the tree digest of the reduced ten-file Hugging Face export. Public export-tree
-digests and their source-to-export mapping are documented in
-[`../docs/checkpoints.md`](../docs/checkpoints.md) and the Hugging Face
-`checkpoint_manifest.json`.
+`manifest.json` records the released file inventory and row counts.

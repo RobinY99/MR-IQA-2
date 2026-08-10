@@ -1,9 +1,9 @@
 # Reproducibility contract
 
 MR-IQA-2 follows the public MR-IQA release pattern—pinned environments,
-relative manifests, explicit launchers, validation history, and model-tree
-digests—and extends it with service, reward-mask, KL-mask, and checkpoint-chain
-contracts.
+relative manifests, explicit launchers, validation history, and artifact
+validation—and extends it with service, reward-mask, KL-mask, and
+checkpoint-chain contracts.
 
 ## Fixed formal configuration
 
@@ -11,14 +11,10 @@ contracts.
 | --- | --- |
 | Initial Actor repository | [`Qwen/Qwen3.5-4B`](https://huggingface.co/Qwen/Qwen3.5-4B/tree/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a), Apache-2.0 |
 | Initial Actor Hub revision | `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a` |
-| Prepared initial Actor experiment tree SHA-256 | `eb67981666c5fc926c829b0d2b49b180c46dc6a74c1c8df895834a54c0fe33f3` |
 | Frozen Editor repository | [`black-forest-labs/FLUX.2-klein-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/e7b7dc27f91deacad38e78976d1f2b499d76a294) |
 | Frozen Editor Hub revision | `e7b7dc27f91deacad38e78976d1f2b499d76a294` |
 | Frozen Editor distribution/license | Not redistributed by MR-IQA-2; pinned 4B checkpoint is Apache-2.0 and obtained independently |
-| Source E5 Judge full promotion tree SHA-256 | `e25415173aacf515e97d5d561c6647a7a84f586061f3a9b2ab3fc079fe21be0a` |
-| Public E5 Judge 10-file export-tree SHA-256 | `21b232a1a30dc765f3e7cf16c00fd270e4be354615fea0120e32f975e2777e5c` |
 | Judge provenance manifest | `judge/source-e5/provenance.json` |
-| Judge prompt SHA-256 | `fa78a4ccfd2194a2026ff0b6b722bf22b28f8fa060389c57c4adb1618ac280f6` |
 | Actor world size | 4 |
 | Service GPUs | 4 |
 | Generations per image | 6 |
@@ -47,9 +43,9 @@ Run checks from least expensive to most expensive:
 bash scripts/test_release.sh --static
 ```
 
-This checks required files, Python and shell syntax, JSONL schemas and hashes,
-unsafe symlinks, accidental model blobs, release-size policy, common private
-paths, and credential patterns.
+This checks required files, Python and shell syntax, JSONL schemas and
+integrity, unsafe symlinks, accidental model blobs, release-size policy,
+common private paths, and credential patterns.
 
 ### 2. CPU contract tests
 
@@ -135,7 +131,7 @@ bash scripts/evaluate.sh test
 Require all six expected row counts, eight complete Actor shards per dataset,
 an Editor barrier, no unreported service failures, and a per-row provenance
 record. Compare against [`checkpoints.md`](checkpoints.md) only when every
-checkpoint and evaluation contract digest matches.
+checkpoint and evaluation contracts match.
 
 ## Per-step evidence
 
@@ -159,67 +155,12 @@ of each run.
 
 ## Checkpoint provenance
 
-Runtime validation and epoch promotion identify a checkpoint with exactly the
-ten-file `selected_inference_export` identity. Its digest is:
-
-```text
-sha256(sorted(relative_path + NUL + decimal_size + NUL + file_sha256 + LF))
-over the 10 allowlisted inference-export files
-```
-
-The evaluation contract and `mr_iqa_2_epoch_chain_v2` record the identity as
-`checkpoint_digest.{semantics,algorithm,sha256,file_count}`, with
-`semantics=selected_inference_export` and `file_count=10`. Optimizer, trainer,
-RNG, cache, log, and temporary files never participate in this stable identity.
-
-Publication additionally records a source full-tree hash covering the promoted
-training checkpoint and its extra state. The source full tree and selected
-public export tree therefore have different scope and normally different
-digests. A release manifest should record:
-
-- artifact ID and role;
-- parent artifact/tree digest;
-- training mode and global step;
-- source full checkpoint tree SHA-256;
-- each selected public file's relative path, size, and SHA-256;
-- public export-tree SHA-256 over the selected allowlist;
-- base Actor and source Judge provenance;
-- data, prompt, cache, and code contract digests;
-- validation status and metrics.
-
-Never infer identity from a directory name such as `best` or `final`. Resolve
-the manifest, verify the public files and export tree, and record the immutable
-Hugging Face revision. For an epoch chain, only a manifest with
-`status=promoted` and `usable=true` may be resolved as the next parent; the
-resolver revalidates artifacts and re-hashes the selected export.
-
-For the public source E5 Judge, runtime identity is a two-part check:
-
-```dotenv
-JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5/provenance.json
-JUDGE_MODEL_TREE_SHA256=e25415173aacf515e97d5d561c6647a7a84f586061f3a9b2ab3fc079fe21be0a
-JUDGE_MODEL_EXPORT_TREE_SHA256=21b232a1a30dc765f3e7cf16c00fd270e4be354615fea0120e32f975e2777e5c
-```
-
-The first digest is the source semantic/cache identity recorded by the
-manifest. The second is the relocatable integrity digest recomputed over the
-downloaded ten-file Hub export. Both must match; they are not interchangeable.
-
-The training/promotion pipeline records the source full-tree digest as a
-signed-off lineage statement. The reduced exporter records that provenance but
-does not claim to recompute it; it independently constructs and validates the
-ten-file public export. A downstream user can verify every public file and the
-export-tree digest, but cannot recompute the source full-tree digest from the
-reduced snapshot.
-
-Public export-tree digests are:
-
-| Artifact | Public 10-file export-tree SHA-256 |
-| --- | --- |
-| Field Actor E5 | `3e372f548631e3ebbb23e9d8493cb2d50aa482b1941025deda907b35e0a97edb` |
-| Source E5 Judge | `21b232a1a30dc765f3e7cf16c00fd270e4be354615fea0120e32f975e2777e5c` |
-| Completion Actor E4 | `fcc36656fd15ba7e164bdf0b0be46290ad231636e88664e7bafaa0982ab59c53` |
-| Completion Actor E5 | `14d801bffb7f65217a899b10c0735d3d2e37436dd799c3b6352f085845e5b374` |
+Runtime validation, evaluation, and epoch promotion all use the published
+artifact manifests. Never infer checkpoint identity from a directory name such
+as `best` or `final`. Only a manifest with `status=promoted` and `usable=true`
+may be resolved as the parent of the next epoch, and the resolver revalidates
+the artifact before use. The required Judge identity variables remain listed
+in `.env.example`; launchers verify them automatically.
 
 ## Release verification
 
@@ -249,12 +190,13 @@ traceback occurred, and all frozen services stopped cleanly after the run.
 Seeds and deterministic Judge generation reduce variation, but exact bitwise
 reproduction can still depend on GPU model, driver, CUDA libraries, collective
 ordering, upstream kernels, and wheel builds. Report the hardware/runtime
-inventory and compare semantic invariants, row counts, tree hashes, and metrics
-rather than claiming bitwise equivalence without evidence.
+inventory and compare semantic invariants, row counts, artifact manifests, and
+metrics rather than claiming bitwise equivalence without evidence.
 
-If a reproduced value differs, first check model/data/prompt/cache digests,
-field eligibility, four-rank completeness, and denominators. Do not explain a
-difference as random noise before those contracts match.
+If a reproduced value differs, first run the launcher/preflight artifact
+validation and check field eligibility, four-rank completeness, and
+denominators. Do not explain a difference as random noise before those
+contracts match.
 
 ## Scientific limitations
 

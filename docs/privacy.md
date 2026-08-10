@@ -39,8 +39,8 @@ diff and generated documentation.
 W&B and local logs may capture command lines, environment variables, output
 directories, sample IDs, and model responses. Use a dedicated project, review
 tracker visibility, and sanitize an exported report before sharing it. The
-public scientific record should retain configuration and content digests, not
-secret-bearing absolute locations.
+public scientific record should retain configuration and artifact manifests,
+not secret-bearing absolute locations.
 
 `WANDB_MODE=offline` is the supported reproducible default. Online tracking is
 optional and should be enabled only when credentials are provided through a
@@ -61,7 +61,7 @@ Before sharing an evaluation bundle:
 2. remove private paths and service metadata;
 3. consider whether images or text identify individuals or locations;
 4. publish aggregate metrics when row-level outputs are not necessary;
-5. preserve hashes and anonymized sample IDs so aggregate results remain
+5. preserve anonymized sample IDs and aggregate provenance so results remain
    auditable.
 
 ## Hugging Face publication
@@ -75,8 +75,8 @@ licenses. The GitHub MIT License does not supersede an upstream weight license.
 The published J0 cache is rebuilt as a portable artifact rather than copied
 from a private runtime database. Its portable schema removes absolute paths,
 ground-truth values, image bytes, raw Judge completions, and Judge reasoning
-fields. Release review verifies its 10,073 rows/samples, 15,003,648-byte size,
-and SHA-256 `7d5410f57f17ff1957e7cbeef951ac01973c0bce97da6f700d61bb222bdd5532`.
+fields. Release review verifies its 10,073 rows/samples and 15,003,648-byte
+size; the upload preflight validates the artifact automatically.
 
 ## Incident response
 

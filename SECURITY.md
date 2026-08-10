@@ -22,7 +22,7 @@ for every dependency and rebuild in an isolated environment.
 
 - Keep `.env`, Hugging Face tokens, W&B credentials, caches, and private paths
   outside version control.
-- Verify model and runtime artifact digests before loading them.
+- Run the included artifact preflight before loading models or runtime assets.
 - Bind Editor and Judge services to loopback or an authenticated private
   network. The reference services are research components, not hardened public
   endpoints.

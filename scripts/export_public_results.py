@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 from pathlib import Path
 
@@ -31,6 +30,9 @@ DROP_COLUMNS = {
     "model_name_or_path",
     "processor_name_or_path",
     "source_log",
+    "source_results_sha256",
+    "checkpoint_tree_sha256",
+    "validation_manifest_sha256",
 }
 
 
@@ -69,14 +71,12 @@ def main() -> int:
         destination = args.output / name
         export_csv(source, destination)
         assert_path_free(destination)
-        digest = hashlib.sha256(destination.read_bytes()).hexdigest()
         with destination.open(encoding="utf-8", newline="") as handle:
             row_count = sum(1 for _ in csv.DictReader(handle))
         exported.append(
             {
                 "file": name,
                 "rows": row_count,
-                "sha256": digest,
                 "source_kind": "derived_numeric_or_generated_text",
             }
         )

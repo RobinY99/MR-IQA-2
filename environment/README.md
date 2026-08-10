@@ -20,8 +20,8 @@ not equivalent to the reported run.
 
 The launchers also require a prebuilt FlashAttention wheel. Set
 `FLASH_ATTN_WHEEL` and `FLASH_ATTN_WHEEL_SHA256` in your private `.env`; the
-launcher verifies the digest before loading it. Install that same verified
-wheel into the Actor/Judge environment before the first preflight:
+launcher validates the artifact automatically. Install that same wheel into
+the Actor/Judge environment before the first preflight:
 
 ```bash
 python -m pip install /path/to/validated_flash_attn.whl
@@ -63,16 +63,16 @@ bash scripts/test_release.sh
 ```
 
 Use `bash scripts/test_release.sh --static` when PyTorch or Pillow are not yet
-installed. The static mode still checks JSONL hashes and schemas, Python and
-shell syntax, forbidden checkpoint blobs, unsafe symlinks, and common private
-path or credential patterns.
+installed. The static mode still checks JSONL integrity and schemas, Python
+and shell syntax, forbidden checkpoint blobs, unsafe symlinks, and common
+private path or credential patterns.
 
 ## Configuration and provenance
 
 Copy `.env.example` to `.env` and fill in local paths. Never commit `.env`, API
 tokens, private model paths, generated images, or original-score caches. Each
-published checkpoint should be verified against its Hugging Face manifest
-before training or evaluation.
+published checkpoint is validated against its Hugging Face manifest by the
+launcher/preflight before training or evaluation.
 
 Capture a sanitized runtime manifest alongside every run without recording a
 hostname, username, or local path:

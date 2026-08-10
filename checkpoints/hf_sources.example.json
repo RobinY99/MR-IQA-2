@@ -1,6 +1,5 @@
 {
   "actor-field-e5-step1455": "SET_LOCAL_CHECKPOINT_DIRECTORY",
   "source-e5-judge-step725": "SET_LOCAL_CHECKPOINT_DIRECTORY",
-  "actor-completion-e4-step1164": "SET_LOCAL_CHECKPOINT_DIRECTORY",
   "actor-completion-e5-step1455": "SET_LOCAL_CHECKPOINT_DIRECTORY"
 }

@@ -33,9 +33,10 @@ Obtain the following before training:
 
 Weights published for this project are indexed at
 [huggingface.co/RobinY99/MR-IQA-2](https://huggingface.co/RobinY99/MR-IQA-2).
-Use an immutable revision and verify every file digest and public export-tree
-digest. The base Actor, frozen Editor, source images, and runtime wheel are not
-GitHub source artifacts and may have separate distribution terms.
+Use an immutable revision. The launcher and preflight validate published
+artifacts automatically. The base Actor, frozen Editor, source images, and
+runtime wheel are not GitHub source artifacts and may have separate
+distribution terms.
 
 ### Initial Actor and frozen Editor
 
@@ -50,10 +51,8 @@ huggingface-cli download Qwen/Qwen3.5-4B \
   --local-dir checkpoints/qwen3.5-4b
 ```
 
-Pin the revision in every archival run. The experiment's initial-Actor tree
-digest records the exact prepared local snapshot; arbitrary download tools may
-add cache metadata outside the model payload, so compute/compare only the file
-set defined by the relevant manifest.
+Pin the revision in every archival run and keep the generated runtime manifest
+with the experiment.
 
 The Editor is
 [`black-forest-labs/FLUX.2-klein-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-4B/tree/e7b7dc27f91deacad38e78976d1f2b499d76a294)
@@ -76,20 +75,12 @@ huggingface-cli download RobinY99/MR-IQA-2 \
   --local-dir checkpoints/mr-iqa-2
 ```
 
-Verify the exact file before use:
-
-```bash
-sha256sum checkpoints/mr-iqa-2/training_assets/original_score_cache.sqlite
-stat -c '%s bytes' checkpoints/mr-iqa-2/training_assets/original_score_cache.sqlite
-```
-
-Expected values:
+Published cache contract:
 
 | Property | Value |
 | --- | --- |
 | Relative Hub path | `training_assets/original_score_cache.sqlite` |
 | Bytes | 15,003,648 |
-| SHA-256 | `7d5410f57f17ff1957e7cbeef951ac01973c0bce97da6f700d61bb222bdd5532` |
 | Rows / samples | 10,073 / 10,073 |
 | Actor ID | `source-e5-judge-step725-original-score` |
 | Payload schema | `vf_original_score_cache_e5_judge_e5prompt_portable_v1` |
@@ -98,8 +89,8 @@ Expected values:
 The cache is a sanitized lookup artifact, not a copy of the private experiment
 database. It omits absolute filesystem paths, ground-truth scores, image bytes,
 raw Judge completions, and Judge reasoning evidence/solution. It retains only
-the portable source identity and integrity metadata required to validate a J0
-lookup against the frozen source E5 Judge contract.
+the portable metadata required to validate a J0 lookup against the frozen
+source E5 Judge contract. The preflight checks the downloaded cache before use.
 
 ## 3. Private machine configuration
 
@@ -107,44 +98,38 @@ lookup against the frozen source E5 Judge contract.
 cp .env.example .env
 ```
 
-Fill `.env` with local paths and expected SHA-256 values. At minimum, the
-launcher requires:
+Fill `.env` with local paths and the artifact-identity fields provided by the
+published manifests. At minimum, the launcher requires:
 
 - Conda initialization and Actor/Judge Python;
-- initial Actor path and tree digest;
+- initial Actor path and manifest identity;
 - training and evaluation image roots;
 - Editor environment and model path;
-- Judge model, manifest, tree digest, prompt schema, and prompt digest;
-- original-score cache path, digest, row/sample contract, and schema;
-- FlashAttention wheel path and digest.
+- Judge model, manifest, prompt schema, and identity fields;
+- original-score cache path, row/sample contract, schema, and identity field;
+- FlashAttention wheel path and artifact identity.
 
 Never commit `.env`. Do not put tokens in a training profile; profiles under
 `configs/training/` are public scientific configuration only.
 
 For a Judge downloaded from `judge/source-e5`, configure both identities and
-the provenance manifest exactly:
+the provenance manifest:
 
 ```dotenv
 JUDGE_MODEL_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5
 JUDGE_MANIFEST_PATH=<repository-root>/checkpoints/mr-iqa-2/judge/source-e5/provenance.json
-# Source full-checkpoint semantic/cache identity.
-JUDGE_MODEL_TREE_SHA256=e25415173aacf515e97d5d561c6647a7a84f586061f3a9b2ab3fc079fe21be0a
-# Relocatable integrity digest of the public ten-file Hub export.
-JUDGE_MODEL_EXPORT_TREE_SHA256=21b232a1a30dc765f3e7cf16c00fd270e4be354615fea0120e32f975e2777e5c
+JUDGE_MODEL_TREE_SHA256=<from-provenance-manifest>
+JUDGE_MODEL_EXPORT_TREE_SHA256=<from-Hub-manifest>
 ```
 
-`JUDGE_MODEL_TREE_SHA256` is the source semantic/cache identity carried by
-`provenance.json`. It deliberately remains the source full-checkpoint digest
-even when `JUDGE_MODEL_PATH` contains the reduced public export.
-`JUDGE_MODEL_EXPORT_TREE_SHA256` is independently recomputed over that
-downloaded ten-file directory. The launcher verifies both; do not substitute
-one for the other.
+The launcher verifies both identity fields automatically before loading the
+Judge.
 
 For the portable J0 cache, the corresponding `.env` block is:
 
 ```dotenv
 ORIGINAL_SCORE_CACHE_PATH=<repository-root>/checkpoints/mr-iqa-2/training_assets/original_score_cache.sqlite
-ORIGINAL_SCORE_CACHE_SHA256=7d5410f57f17ff1957e7cbeef951ac01973c0bce97da6f700d61bb222bdd5532
+ORIGINAL_SCORE_CACHE_SHA256=<from-Hub-manifest>
 ORIGINAL_SCORE_CACHE_EXPECTED_ROW_COUNT=10073
 ORIGINAL_SCORE_CACHE_EXPECTED_SAMPLE_COUNT=10073
 ORIGINAL_SCORE_CACHE_EXPECTED_ACTOR_IDS=source-e5-judge-step725-original-score
@@ -156,12 +141,6 @@ ORIGINAL_SCORE_CACHE_EXPECTED_RATING_MAX=5.0
 `0.0/5.0` is the accepted Judge rating interval used by cache validation. The
 actual cached values occupy `0.83/4.23`, as reported above.
 
-Verify the public manifests from inside the data directory:
-
-```bash
-(cd data && sha256sum -c checksums.sha256)
-```
-
 ## 4. Inspect and validate a mode
 
 List the exact contract without loading models:
@@ -171,15 +150,15 @@ bash scripts/train.sh --mode field_component_kl002 --print-plan
 bash scripts/train.sh --mode completion_global_kl002 --print-plan
 ```
 
-Validate paths, artifact hashes, score-cache contract, mode invariants, and
-service topology:
+Validate paths, artifacts, score-cache contract, mode invariants, and service
+topology:
 
 ```bash
 bash scripts/train.sh --mode field_component_kl002 --validate-config
 ```
 
-Validation rejects a changed data row count, missing model/runtime artifact,
-wrong SHA-256, unfrozen ViT/aligner, or an inconsistent credit/KL combination.
+Validation rejects a changed data row count, missing or changed model/runtime
+artifact, unfrozen ViT/aligner, or an inconsistent credit/KL combination.
 
 ## 5. One-update smoke test
 
@@ -240,7 +219,7 @@ The formal launcher:
 3. discovers the single expected `checkpoint-<end-step>` and creates its
    manifest in `quarantined` state;
 4. verifies the trainer exit, checkpoint artifacts, four-rank trajectory
-   evidence, provenance, tracking URI, and stable inference identity before
+   evidence, provenance, tracking URI, and inference identity before
    transitioning it to `technically_valid`;
 5. stops the training services and performs eight-shard Actor inference on all
    200 validation rows;
@@ -248,8 +227,8 @@ The formal launcher:
    the frozen Judge over all 200 retained rows;
 7. applies the `comparison_observational` gate and transitions the manifest to
    `promoted` only when the full evaluation contract passes;
-8. resolves that promoted manifest, re-hashes its stable identity, and only
-   then permits it to seed the next epoch.
+8. resolves and revalidates that promoted manifest before permitting it to seed
+   the next epoch.
 
 Observational promotion is a structural and provenance gate, not a hidden
 PLCC/SRCC selection rule. It requires 200 source rows, eight Actor shards, the
@@ -266,16 +245,13 @@ Each epoch writes three related records below `OUTPUT_ROOT`:
 | Path | Purpose |
 | --- | --- |
 | `state/checkpoints/epochN.json` | `vf_checkpoint_manifest_v2`; owns `quarantined → technically_valid → promoted`, parent provenance, technical evidence, observational validation, approval, and the stable checkpoint identity |
-| `state/checkpoints/epochN.validation.json` | Flattened evidence from the complete 200-row Actor→Editor barrier→Judge run, including the evaluation checkpoint digest used by promotion |
-| `state/epochN.json` | `mr_iqa_2_epoch_chain_v2`; compact epoch-chain record with steps, checkpoint/manifest paths, final status, validation paths, and `checkpoint_digest.{semantics,algorithm,sha256,file_count}` |
+| `state/checkpoints/epochN.validation.json` | Flattened evidence from the complete 200-row Actor→Editor barrier→Judge run, including the validated checkpoint identity used by promotion |
+| `state/epochN.json` | `mr_iqa_2_epoch_chain_v2`; compact epoch-chain record with steps, checkpoint/manifest paths, final status, validation paths, and checkpoint identity |
 
-The stable identity covers exactly the ten allowlisted inference-export files;
-optimizer state, RNG state, caches, logs, and temporary files do not
-participate. Those extra files may be needed for full-state resumption, but
-they are mutable and are not the checkpoint identity used by validation and
-promotion. The stable selected-export digest is therefore distinct from a
-source full-tree hash used for release lineage. See
-[`checkpoints.md`](checkpoints.md) for the exact allowlist and algorithm.
+The launcher owns the checkpoint identity checks used by validation and
+promotion. Optimizer state, RNG state, caches, logs, and temporary files may be
+needed for full-state resumption, but they are not accepted as substitutes for
+a promoted inference artifact.
 
 Use `--epochs N` for a deliberate prefix of one to five epochs. Use
 `--skip-validation` only with `--epochs 1`; the launcher rejects every other
@@ -353,6 +329,7 @@ wandb/                        local W&B files when enabled
 ```
 
 Keep every checkpoint manifest, epoch state, merged validation output, and
-audit record even when large checkpoint directories are later pruned. A resumed
-run must verify the parent checkpoint tree digest and preserve the same mode,
-data, source Judge, prompt, and initial/reference-model provenance.
+audit record even when large checkpoint directories are later pruned. A
+resumed run must resolve and validate the promoted parent manifest and preserve
+the same mode, data, source Judge, prompt, and initial/reference-model
+provenance.
