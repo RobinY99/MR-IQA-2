@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="MR-IQA-2 logo" width="260">
+</p>
+
 # MR-IQA-2: Masked Credit Assignment for Visual Quality Reasoning
 
 <p align="center">
@@ -36,23 +40,35 @@ The Hugging Face release contains exactly three models:
 Full training and evaluation require Linux, CUDA 13.0, and one host with eight
 visible NVIDIA GPUs.
 
+Clone the repository, then create the two pinned inference environments with
+one command:
+
 ```bash
 git clone https://github.com/RobinY99/MR-IQA-2.git
 cd MR-IQA-2
-
-cp .env.example .env
-
-conda env create -f environment/actor-judge.yml
-conda env create -f environment/editor.yml
-conda run -n mr_iqa_actor_judge \
-  python -m pip install -r requirements/actor-judge.txt
-conda run -n mr_iqa_editor \
-  python -m pip install -r requirements/editor.txt
+bash scripts/setup_envs.sh --profile inference
 ```
 
-Install the FlashAttention wheel documented in
-[`environment/README.md`](environment/README.md), then download the base model
-and the three released models:
+The same entry point can create and verify the CPU test environment:
+
+```bash
+bash scripts/setup_envs.sh --profile test
+```
+
+For full training plus tests, provide the ABI-compatible FlashAttention wheel
+documented in [`environment/README.md`](environment/README.md):
+
+```bash
+FLASH_ATTN_WHEEL=/absolute/path/to/validated_flash_attn.whl \
+  bash scripts/setup_envs.sh --profile all
+```
+
+The `training` and `all` profiles also create a private `.env` from
+`.env.example` when one does not exist. Fill in the machine-local model, data,
+and output paths before launching a run. The setup command installs software;
+it does not download model weights or datasets.
+
+Download the base model and the three released models:
 
 ```bash
 python -m pip install -r requirements/publish.txt

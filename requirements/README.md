@@ -2,6 +2,16 @@
 
 Actor/Judge and Editor use separate environments.
 
+Install and verify the pinned environments through the public wrapper:
+
+```bash
+bash scripts/setup_envs.sh --profile inference
+bash scripts/setup_envs.sh --profile test
+```
+
+Full training additionally requires `FLASH_ATTN_WHEEL`; see
+`environment/README.md` for the one-command form.
+
 | File | Purpose | GPU required |
 | --- | --- | --- |
 | `actor-judge.txt` | GRPO Actor training, Actor inference, and frozen E5 Judge | NVIDIA CUDA |

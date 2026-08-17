@@ -1,0 +1,8 @@
+name: mr_iqa_release_test
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12.13
+  - pip
+  - setuptools
+  - wheel

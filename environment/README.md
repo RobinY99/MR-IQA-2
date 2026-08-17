@@ -2,6 +2,34 @@
 
 Use separate Python 3.12.13 environments for Actor/Judge and Editor.
 
+## One-command setup
+
+Create both environments for single-image inference:
+
+```bash
+bash scripts/setup_envs.sh --profile inference
+```
+
+Create and verify the CPU release-test environment:
+
+```bash
+bash scripts/setup_envs.sh --profile test
+```
+
+Create the training and test environments together after obtaining the
+FlashAttention wheel that matches Python, PyTorch, and CUDA:
+
+```bash
+FLASH_ATTN_WHEEL=/absolute/path/to/validated_flash_attn.whl \
+  bash scripts/setup_envs.sh --profile all
+```
+
+Use `--profile training` to omit the CPU test environment, `--no-verify` to
+skip post-install checks, or `--dry-run` to inspect every command without
+changing the machine. The `training` and `all` profiles create `.env` from
+`.env.example` when needed, but local model and dataset paths still have to be
+filled in.
+
 ## Actor and Judge
 
 ```bash
@@ -55,6 +83,8 @@ bash scripts/test_release.sh
 ```
 
 Use `bash scripts/test_release.sh --static` before installing test dependencies.
+The one-command test profile uses `environment/test.yml` and runs the same
+suite after installation.
 
 ## Configuration and provenance
 
