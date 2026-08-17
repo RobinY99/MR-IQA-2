@@ -1,6 +1,7 @@
 # MR-IQA-2: Masked Credit Assignment for Visual Quality Reasoning
 
 <p align="center">
+  <a href="paper/README.md">Paper source</a> |
   <a href="https://huggingface.co/RobinY99/MR-IQA-2">Model weights</a> |
   <a href="docs/training.md">Training</a> |
   <a href="docs/evaluation.md">Evaluation</a>
@@ -26,6 +27,7 @@ The Hugging Face release contains exactly three models:
 - `global/`: shared reward, KL, and runtime contracts.
 - `configs/training/`: formal training presets.
 - `data/`: 7,000 training rows, 200 validation rows, and 28,270 test rows.
+- `paper/`: merged arXiv manuscript and standalone supplementary materials.
 - `environment/`, `requirements/`, `scripts/`: environments, launchers, tests,
   and release tools.
 
