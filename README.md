@@ -5,7 +5,6 @@
 # MR-IQA-2: Masked Credit Assignment for Visual Quality Reasoning
 
 <p align="center">
-  <a href="paper/README.md">Paper source</a> |
   <a href="https://huggingface.co/RobinY99/MR-IQA-2">Model weights</a> |
   <a href="docs/training.md">Training</a> |
   <a href="docs/evaluation.md">Evaluation</a>
@@ -31,7 +30,6 @@ The Hugging Face release contains exactly three models:
 - `global/`: shared reward, KL, and runtime contracts.
 - `configs/training/`: formal training presets.
 - `data/`: 7,000 training rows, 200 validation rows, and 28,270 test rows.
-- `paper/`: merged arXiv manuscript and standalone supplementary materials.
 - `environment/`, `requirements/`, `scripts/`: environments, launchers, tests,
   and release tools.
 
@@ -379,10 +377,8 @@ the six dataset-level coefficients.
 | [MR-IQA](https://github.com/RobinY99/MR-IQA) | 0.949 / 0.931 | 0.892 / 0.897 | 0.899 / 0.883 | 0.804 / 0.732 | 0.672 / 0.683 | 0.767 / 0.732 | 0.831 / 0.810 |
 | MR-IQA-2 | 0.937 / 0.917 | 0.900 / 0.899 | 0.893 / 0.863 | 0.809 / 0.739 | 0.667 / 0.669 | 0.824 / 0.785 | 0.838 / 0.812 |
 
-MR-IQA values are from the released Qwen3-VL-2B result in the
-[MR-IQA paper](https://arxiv.org/pdf/2606.29760). MR-IQA-2 values use the
-released masked-credit E5 Actor at step 1,455; exact valid-row counts and
-unrounded coefficients are reported in
+MR-IQA-2 values use the released masked-credit E5 Actor at step 1,455; exact
+valid-row counts and unrounded coefficients are reported in
 [`docs/checkpoints.md`](docs/checkpoints.md#field-e5-recommended).
 
 ## Verification
