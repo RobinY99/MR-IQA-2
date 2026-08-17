@@ -16,8 +16,7 @@ The Hugging Face release contains exactly three models:
 
 - `actor/`: masked credit E5 Actor, step 1,455;
 - `judge/`: frozen E5 Judge, step 725;
-- `editor/`: FLUX.2-klein-4B at revision
-  `e7b7dc27f91deacad38e78976d1f2b499d76a294`.
+- `editor/`: FLUX.2-klein-4B.
 
 ## Repository contents
 
@@ -57,11 +56,9 @@ and the three released models:
 python -m pip install -r requirements/publish.txt
 
 huggingface-cli download Qwen/Qwen3.5-4B \
-  --revision 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a \
   --local-dir checkpoints/qwen3.5-4b
 
 huggingface-cli download RobinY99/MR-IQA-2 \
-  --revision 402afd29be9eb539d9d6b054a985cb8c49c32bd5 \
   --include "actor/**" "judge/**" "editor/**" \
   --local-dir checkpoints/mr-iqa-2
 ```
@@ -87,19 +84,16 @@ Actor and Judge load directly from their Hugging Face subfolders:
 from transformers import AutoModelForImageTextToText, AutoProcessor
 
 repo_id = "RobinY99/MR-IQA-2"
-revision = "402afd29be9eb539d9d6b054a985cb8c49c32bd5"
 
 
 def load_qwen(role):
     processor = AutoProcessor.from_pretrained(
         repo_id,
         subfolder=role,
-        revision=revision,
     )
     model = AutoModelForImageTextToText.from_pretrained(
         repo_id,
         subfolder=role,
-        revision=revision,
         torch_dtype="auto",
         device_map="auto",
         use_safetensors=True,
@@ -122,7 +116,6 @@ from huggingface_hub import snapshot_download
 
 snapshot = snapshot_download(
     "RobinY99/MR-IQA-2",
-    revision="402afd29be9eb539d9d6b054a985cb8c49c32bd5",
     allow_patterns=["editor/**"],
 )
 editor = Flux2KleinPipeline.from_pretrained(
@@ -130,6 +123,30 @@ editor = Flux2KleinPipeline.from_pretrained(
     torch_dtype=torch.bfloat16,
 )
 ```
+
+## Quick start: one image, one GPU
+
+After installing the two validated environments above, provide one input image:
+
+```bash
+python examples/quick_start.py /absolute/path/to/input.jpg
+```
+
+The script uses GPU 0 by default. It runs the Actor, Editor, and frozen E5
+Judge sequentially so only one model occupies the selected GPU at a time. The
+Judge scores both the input and edited images and reports `J0`, `J1`, and
+`J1-J0`. No HTTP service is started. Use another GPU or cached models with:
+
+```bash
+python examples/quick_start.py /absolute/path/to/input.jpg \
+  --gpu 1 \
+  --local-files-only \
+  --output-dir outputs/my_image
+```
+
+The output directory contains `actor_raw.txt`, `assessment.json`, `edited.png`,
+`evaluation.json`, and `result.json`. Actor/Judge and Editor remain in separate
+processes because their validated dependency versions differ.
 
 ## Single-image Actor to Editor example
 
