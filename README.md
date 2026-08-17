@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="MR-IQA-2 logo" width="260">
+  <img src="assets/logo.png" alt="MR-IQA-2 logo" width="120">
 </p>
 
 # MR-IQA-2: Masked Credit Assignment for Visual Quality Reasoning
@@ -398,12 +398,13 @@ bash scripts/test_release.sh
 Training checks shard completeness, update counts, finite rewards and KL, and
 the expected masked credit and component-KL application counts.
 
-## License and citation
+## License
 
 Original code is MIT licensed. Model weights, datasets, dependencies, and the
 frozen Editor retain their upstream terms. Qwen-derived Actor/Judge weights
 and the pinned FLUX.2-klein-4B Editor are Apache-2.0. See
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-Please cite the software metadata in [`CITATION.cff`](CITATION.cff). If you use
-MR-IQA as well, cite its associated paper and repository separately.
+## Citation
+
+<!-- Citation will be added after the publication metadata is finalized. -->
