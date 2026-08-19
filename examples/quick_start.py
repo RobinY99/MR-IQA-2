@@ -31,7 +31,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("image", help="Input image")
     parser.add_argument("--output-dir", default="outputs/quick_start")
-    parser.add_argument("--gpu", default="0", help="Physical GPU index")
+    parser.add_argument("--gpu", type=int, default=0, help="Physical GPU index")
+    parser.add_argument(
+        "--cuda-home",
+        default="",
+        help="CUDA toolkit root used for runtime extension compilation",
+    )
     parser.add_argument("--actor-env", default="mr_iqa_actor_judge")
     parser.add_argument("--editor-env", default="mr_iqa_editor")
     parser.add_argument("--actor-python", default="")
@@ -58,6 +63,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=argparse.SUPPRESS,
     )
     args = parser.parse_args(argv)
+    if args.gpu < 0:
+        parser.error("--gpu must be non-negative")
     if args.max_pixels < 256:
         parser.error("--max-pixels must be at least 256")
     return args
@@ -327,23 +334,49 @@ def run_sequential(
     child_environment = os.environ.copy()
     child_environment["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
     child_environment["PYTHONUNBUFFERED"] = "1"
+    cuda_bin: Path | None = None
+    effective_cuda_home = args.cuda_home or child_environment.get("CUDA_HOME", "")
+    if effective_cuda_home:
+        cuda_home = Path(effective_cuda_home).expanduser().resolve(strict=True)
+        nvcc = cuda_home / "bin" / "nvcc"
+        if not nvcc.is_file() or not os.access(nvcc, os.X_OK):
+            raise RuntimeError(f"CUDA toolkit has no executable nvcc: {nvcc}")
+        child_environment["CUDA_HOME"] = str(cuda_home)
+        cuda_bin = nvcc.parent
+
     for stage, environment, python_executable in (
         ("actor", args.actor_env, args.actor_python),
         ("editor", args.editor_env, args.editor_python),
         ("judge", args.actor_env, args.actor_python),
     ):
+        stage_environment = child_environment.copy()
+        resolved_python = python_executable
+        if python_executable:
+            python_path = Path(
+                os.path.abspath(os.path.expanduser(python_executable))
+            )
+            if not python_path.is_file() or not os.access(python_path, os.X_OK):
+                raise RuntimeError(f"Python interpreter is not executable: {python_path}")
+            resolved_python = str(python_path)
+            stage_environment["PATH"] = os.pathsep.join(
+                [str(python_path.parent), stage_environment.get("PATH", "")]
+            )
+        if cuda_bin is not None:
+            stage_environment["PATH"] = os.pathsep.join(
+                [str(cuda_bin), stage_environment.get("PATH", "")]
+            )
         command_runner(
             _stage_command(
                 conda=conda,
                 environment=environment,
-                python_executable=python_executable,
+                python_executable=resolved_python,
                 stage=stage,
                 args=args,
                 image_path=image_path,
                 output_dir=output_dir,
             ),
             check=True,
-            env=child_environment,
+            env=stage_environment,
         )
     return json.loads((output_dir / "result.json").read_text(encoding="utf-8"))
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -60,6 +61,12 @@ class SingleGpuQuickStartTests(unittest.TestCase):
             root = Path(temporary_directory)
             image = root / "input.png"
             output = root / "output"
+            actor_python = root / "actor" / "bin" / "python"
+            editor_python = root / "editor" / "bin" / "python"
+            for python_path in (actor_python, editor_python):
+                python_path.parent.mkdir(parents=True)
+                python_path.write_text("#!/bin/sh\n", encoding="utf-8")
+                python_path.chmod(0o755)
             image.write_bytes(b"image")
             args = parse_args(
                 [
@@ -67,9 +74,9 @@ class SingleGpuQuickStartTests(unittest.TestCase):
                     "--output-dir",
                     str(output),
                     "--actor-python",
-                    "/envs/actor/bin/python",
+                    str(actor_python),
                     "--editor-python",
-                    "/envs/editor/bin/python",
+                    str(editor_python),
                     "--actor-model",
                     "/models/actor",
                     "--editor-model",
@@ -79,7 +86,7 @@ class SingleGpuQuickStartTests(unittest.TestCase):
             calls = []
 
             def fake_runner(command, *, check, env):
-                calls.append(command)
+                calls.append((command, env))
                 stage = command[command.index("--stage") + 1]
                 if stage == "judge":
                     (output / "result.json").write_text(
@@ -90,11 +97,113 @@ class SingleGpuQuickStartTests(unittest.TestCase):
             with patch("examples.quick_start.shutil.which", return_value=None):
                 run_sequential(args, command_runner=fake_runner)
 
-        self.assertEqual(calls[0][0], "/envs/actor/bin/python")
-        self.assertEqual(calls[1][0], "/envs/editor/bin/python")
-        self.assertEqual(calls[2][0], "/envs/actor/bin/python")
-        self.assertIn("/models/actor", calls[0])
-        self.assertIn("/models/editor", calls[1])
+        self.assertEqual(calls[0][0][0], str(actor_python))
+        self.assertEqual(calls[1][0][0], str(editor_python))
+        self.assertEqual(calls[2][0][0], str(actor_python))
+        self.assertIn("/models/actor", calls[0][0])
+        self.assertIn("/models/editor", calls[1][0])
+        self.assertEqual(
+            calls[0][1]["PATH"].split(os.pathsep)[0],
+            str(actor_python.parent),
+        )
+        self.assertEqual(
+            calls[1][1]["PATH"].split(os.pathsep)[0],
+            str(editor_python.parent),
+        )
+
+    def test_cuda_home_and_gpu_validation(self) -> None:
+        with self.assertRaises(SystemExit):
+            parse_args(["input.png", "--gpu", "-1"])
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            image = root / "input.png"
+            output = root / "output"
+            cuda_home = root / "cuda"
+            nvcc = cuda_home / "bin" / "nvcc"
+            nvcc.parent.mkdir(parents=True)
+            nvcc.write_text("#!/bin/sh\n", encoding="utf-8")
+            nvcc.chmod(0o755)
+            image.write_bytes(b"image")
+            args = parse_args(
+                [
+                    str(image),
+                    "--output-dir",
+                    str(output),
+                    "--cuda-home",
+                    str(cuda_home),
+                ]
+            )
+            calls = []
+
+            def fake_runner(command, *, check, env):
+                calls.append(env)
+                stage = command[command.index("--stage") + 1]
+                if stage == "judge":
+                    (output / "result.json").write_text(
+                        json.dumps({"status": "success"}),
+                        encoding="utf-8",
+                    )
+
+            with patch("examples.quick_start.shutil.which", return_value="/conda"):
+                run_sequential(args, command_runner=fake_runner)
+
+        self.assertEqual(len(calls), 3)
+        self.assertTrue(
+            all(env["CUDA_HOME"] == str(cuda_home.resolve()) for env in calls)
+        )
+        self.assertTrue(
+            all(
+                env["PATH"].split(os.pathsep)[0] == str(nvcc.resolve().parent)
+                for env in calls
+            )
+        )
+
+    def test_explicit_virtualenv_python_symlink_is_preserved(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            image = root / "input.png"
+            output = root / "output"
+            base_python = root / "base" / "python3"
+            venv_python = root / "venv" / "bin" / "python"
+            base_python.parent.mkdir(parents=True)
+            venv_python.parent.mkdir(parents=True)
+            base_python.write_text("#!/bin/sh\n", encoding="utf-8")
+            base_python.chmod(0o755)
+            venv_python.symlink_to(base_python)
+            image.write_bytes(b"image")
+            args = parse_args(
+                [
+                    str(image),
+                    "--output-dir",
+                    str(output),
+                    "--actor-python",
+                    str(venv_python),
+                    "--editor-python",
+                    str(venv_python),
+                ]
+            )
+            calls = []
+
+            def fake_runner(command, *, check, env):
+                calls.append((command, env))
+                stage = command[command.index("--stage") + 1]
+                if stage == "judge":
+                    (output / "result.json").write_text(
+                        json.dumps({"status": "success"}),
+                        encoding="utf-8",
+                    )
+
+            with patch("examples.quick_start.shutil.which", return_value=None):
+                run_sequential(args, command_runner=fake_runner)
+
+        self.assertTrue(all(call[0][0] == str(venv_python) for call in calls))
+        self.assertTrue(
+            all(
+                call[1]["PATH"].split(os.pathsep)[0] == str(venv_python.parent)
+                for call in calls
+            )
+        )
 
     def test_quality_delta_requires_two_valid_scores(self) -> None:
         self.assertAlmostEqual(_quality_delta({"mean": 2.75}, {"mean": 3.5}), 0.75)
