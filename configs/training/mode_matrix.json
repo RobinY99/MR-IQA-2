@@ -42,20 +42,6 @@
       "component_kl_apply_count_per_step": 1,
       "epochs": 5,
       "optimizer_updates_per_epoch": 291
-    },
-    "completion_nokl_30step": {
-      "profile": "completion_nokl_30step.env",
-      "credit_mask": "completion",
-      "component_kl_mode": "off",
-      "global_completion_kl_beta": 0.0,
-      "steps": 30
-    },
-    "field_nokl_30step": {
-      "profile": "field_nokl_30step.env",
-      "credit_mask": "field",
-      "component_kl_mode": "off",
-      "global_completion_kl_beta": 0.0,
-      "steps": 30
     }
   }
 }

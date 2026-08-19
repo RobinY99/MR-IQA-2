@@ -1,2 +1,0 @@
-# Tooling used to upload checkpoint artifacts and repository metadata.
-huggingface-hub==0.34.4

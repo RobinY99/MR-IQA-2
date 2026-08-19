@@ -1104,7 +1104,7 @@ REPORT_TO=none
 if [[ "${MODE}" == "formal" ]]; then
   export VF_STOP_AFTER_EPOCH="${TARGET_EPOCH}"
   unset VF_STOP_AFTER_STEP
-  export WANDB_MODE="${WANDB_MODE:-offline}"
+  export WANDB_MODE="${WANDB_MODE:-online}"
   export WANDB_RUN_ID
   export WANDB_RESUME=allow
   REPORT_TO=wandb
@@ -1115,7 +1115,7 @@ if [[ "${MODE}" == "formal" ]]; then
 elif [[ "${MODE}" == "steps" ]]; then
   unset VF_STOP_AFTER_EPOCH
   export VF_STOP_AFTER_STEP="${STOP_AFTER_STEP}"
-  export WANDB_MODE="${WANDB_MODE:-offline}"
+  export WANDB_MODE="${WANDB_MODE:-online}"
   export WANDB_RUN_ID
   export WANDB_RESUME=allow
   REPORT_TO=wandb

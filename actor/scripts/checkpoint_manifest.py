@@ -17,7 +17,7 @@ TECHNICALLY_VALID = "technically_valid"
 PROMOTED = "promoted"
 
 # This is the same public inference allowlist used by
-# ``scripts/hf_export_checkpoints.py``.  A training checkpoint also contains
+# the public Hub export. A training checkpoint also contains
 # mutable/non-portable state (optimizer shards, RNG state, caches, and logs).
 # Those files are required for a full-state resume, but must not participate in
 # the stable model identity used by validation and release promotion.

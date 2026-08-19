@@ -81,8 +81,6 @@ One sampled-K3 global completion KL with beta 0.02 is applied on the loss side,
 exactly once per optimizer update. `kl_in_reward=false`: the KL is not subtracted
 from trajectory rewards.
 
-The two no-KL modes run 30-step field/completion credit checks.
-
 See [`../global/contracts/reward_and_kl.md`](../global/contracts/reward_and_kl.md)
 for the executable contract and
 [`../configs/training/mode_matrix.json`](../configs/training/mode_matrix.json)

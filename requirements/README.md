@@ -17,7 +17,6 @@ Full training additionally requires `FLASH_ATTN_WHEEL`; see
 | `actor-judge.txt` | GRPO Actor training, Actor inference, and frozen E5 Judge | NVIDIA CUDA |
 | `editor.txt` | FLUX.2 image-editing service | NVIDIA CUDA |
 | `test.txt` | Static checks and CPU contract tests | No |
-| `publish.txt` | Hugging Face upload tooling | No |
 
 Install the compatible FlashAttention wheel into Actor/Judge and configure it
 through `.env.example`:

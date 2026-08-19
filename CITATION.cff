@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use MR-IQA-2, please cite this software release."
-title: "MR-IQA-2: Fine-Grained Credit Assignment for Visual Quality Reasoning"
+title: "MR-IQA-2: Masked Credit Assignment for Visual Quality Reasoning"
 type: software
 version: 0.1.0
 date-released: 2026-08-10

@@ -49,7 +49,7 @@ ORIGINAL_SCORE_CACHE_PATH=<local-generated-j0-cache.sqlite>
 Download all three models from the project repository:
 
 ```bash
-huggingface-cli download RobinY99/MR-IQA-2 \
+hf download RobinY99/MR-IQA-2 \
   --revision 402afd29be9eb539d9d6b054a985cb8c49c32bd5 \
   --include "actor/**" "judge/**" "editor/**" \
   --local-dir checkpoints/mr-iqa-2
@@ -119,13 +119,5 @@ Report Actor metrics and Editor/Judge metrics separately:
 - modal solution and semantic template-family share;
 - edited-image uniqueness.
 
-PLCC/SRCC measure rating behavior, so audit solution diversity separately. In
-the unpublished completion-wide experiment, KonIQ PLCC/SRCC reaches
-0.931863/0.913624 while all 2,010 normalized solutions are identical.
+PLCC/SRCC measure rating behavior, so audit solution diversity separately.
 Different source images still require per-image Editor/Judge evaluation.
-
-## Comparing checkpoints
-
-Use [`../scripts/compare_validation.sh`](../scripts/compare_validation.sh) with
-the same 200 rows, Judge, prompt, Editor, score cache, sampling profile, and
-metric denominator.

@@ -39,8 +39,7 @@ The initial Actor is the official Apache-2.0
 at revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`:
 
 ```bash
-python -m pip install -r requirements/publish.txt
-huggingface-cli download Qwen/Qwen3.5-4B \
+hf download Qwen/Qwen3.5-4B \
   --revision 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a \
   --local-dir checkpoints/qwen3.5-4b
 ```
@@ -48,7 +47,7 @@ huggingface-cli download Qwen/Qwen3.5-4B \
 Download the frozen Judge and Editor from the project repository:
 
 ```bash
-huggingface-cli download RobinY99/MR-IQA-2 \
+hf download RobinY99/MR-IQA-2 \
   --revision 402afd29be9eb539d9d6b054a985cb8c49c32bd5 \
   --include "judge/**" "editor/**" \
   --local-dir checkpoints/mr-iqa-2
@@ -221,7 +220,7 @@ bash scripts/train.sh --mode completion_global_kl002
 ```
 
 Use a unique `RUN_ID`; `OUTPUT_ROOT` and `VF_STORAGE_ROOT` must be the same new
-directory. `WANDB_MODE=offline` is the default.
+directory. `WANDB_MODE=online` is the default for every training launch.
 
 The formal launcher:
 
@@ -259,18 +258,7 @@ Use `--epochs N` for a deliberate prefix of one to five epochs. Use
 combination. This debugging path stops after technical validation, leaves the
 checkpoint unpromoted, and cannot seed another epoch.
 
-## 7. Thirty-step ablations
-
-The two independent no-KL probes both start from the native Actor:
-
-```bash
-bash scripts/train.sh --mode field_nokl_30step
-bash scripts/train.sh --mode completion_nokl_30step
-```
-
-Both start from the native Actor.
-
-## 8. Required runtime audits
+## 7. Required runtime audits
 
 A valid formal update requires:
 
@@ -294,21 +282,7 @@ the separate global completion KL is disabled.
 
 Aggregate rewards from all four ranks; W&B `vf/*reward_mean` is rank-0 local.
 
-## 9. Monitoring collapse
-
-Retain all 200 validation rows and monitor:
-
-- exact and normalized solution uniqueness;
-- modal normalized-solution share;
-- semantic template-family share;
-- evidence uniqueness;
-- success, actor-ineligible, and service-error counts;
-- `J0`, `J1`, delta, and zero-filled reasoning reward.
-
-Completion-global crossed 50% house-template share at step 236 and 90% at step
-265; E1 produced house-family solutions for all 197 eligible validation rows.
-
-## 10. Outputs and resumption
+## 8. Outputs and resumption
 
 The public launcher writes each experiment below its selected `OUTPUT_ROOT`:
 

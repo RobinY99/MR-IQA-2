@@ -20,8 +20,7 @@ Actor-only rating performance on six generalization datasets. Each entry is
 
 MR-IQA values are from the released Qwen3-VL-2B result in the
 [MR-IQA paper](https://arxiv.org/pdf/2606.29760). MR-IQA-2 uses the released
-masked-credit E5 Actor at step 1,455. Exact coefficients and valid-row counts
-are in [checkpoint results](docs/checkpoints.md#field-e5-recommended).
+masked-credit E5 Actor at step 1,455.
 
 ## Installation
 

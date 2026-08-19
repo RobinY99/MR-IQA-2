@@ -37,9 +37,7 @@ python3 scripts/check_release.py
 
 for mode in \
   completion_global_kl002 \
-  field_component_kl002 \
-  completion_nokl_30step \
-  field_nokl_30step; do
+  field_component_kl002; do
   bash scripts/train.sh --mode "${mode}" --print-plan \
     | python3 -c 'import json, sys; plan = json.load(sys.stdin); assert plan["mode"] == sys.argv[1]' "${mode}"
 done

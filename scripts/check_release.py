@@ -50,14 +50,14 @@ REQUIRED_FILES = (
     "pyproject.toml",
     "actor/plugin/vf_dual_rollout_trainer.py",
     "actor/scripts/run_editor_judge_grpo_stage.sh",
-    "checkpoints/hf_checkpoint_manifest.json",
     "editor/server.py",
+    "examples/quick_start.py",
     "judge/launch.sh",
     "judge/score_manifest.py",
     "judge/server.py",
     "scripts/build_source_manifest.py",
-    "scripts/hf_export_checkpoints.py",
-    "scripts/hf_upload_release.py",
+    "scripts/evaluate.sh",
+    "scripts/train.sh",
     "data/checksums.sha256",
     "data/train.jsonl",
     "data/validation.jsonl",
@@ -111,10 +111,13 @@ def release_files(root: Path) -> Iterable[Path]:
         directory_names[:] = sorted(
             name
             for name in directory_names
-            if name not in {".git", ".pytest_cache", "__pycache__"}
+            if name
+            not in {".claude", ".git", ".gitnexus", ".pytest_cache", "__pycache__"}
         )
         current = Path(current_root)
         for name in sorted(file_names):
+            if current == root and name in {"AGENTS.md", "CLAUDE.md"}:
+                continue
             yield current / name
 
 

@@ -27,16 +27,7 @@ evaluation_outputs/
 *.pid
 
 # Large model/training artifacts belong on Hugging Face, not GitHub
-checkpoints/**/*.safetensors
-checkpoints/**/*.bin
-checkpoints/**/*.pt
-checkpoints/**/*.pth
-checkpoints/**/*.ckpt
-checkpoints/**/*.sqlite
-checkpoints/**/optimizer.pt
-checkpoints/**/scheduler.pt
-checkpoints/**/rng_state*.pth
-checkpoints/**/trainer_state.json
+checkpoints/
 
 # Download and build caches
 .cache/

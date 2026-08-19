@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import importlib.util
 import json
 import shutil
 import subprocess
@@ -145,15 +144,6 @@ class JudgeReleaseManifestTests(unittest.TestCase):
             result["selected_export_tree_sha256"],
             identity["selected_export_tree_sha256"],
         )
-
-    def test_selected_tree_algorithm_matches_hub_exporter(self) -> None:
-        exporter_path = JUDGE_ROOT.parent / "scripts" / "hf_export_checkpoints.py"
-        spec = importlib.util.spec_from_file_location("mriqa2_hf_exporter_test", exporter_path)
-        assert spec is not None and spec.loader is not None
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        records = self._file_records()
-        self.assertEqual(export_tree_digest(records), module._tree_digest(records))
 
     def test_portable_manifest_is_relocatable(self) -> None:
         relocated = self.root / "another-machine" / "models" / "judge"
