@@ -1,6 +1,6 @@
 <h1><img src="assets/logo.png" alt="MR-IQA-2 logo" width="42" align="absmiddle"> MR-IQA-2: Masked Credit Assignment for Visual Quality Reasoning</h1>
 
-[Model weights](https://huggingface.co/RobinY99/MR-IQA-2) · [Training](docs/training.md) · [Evaluation](docs/evaluation.md)
+[Paper](https://arxiv.org/abs/2608.18579) · [Model weights](https://huggingface.co/RobinY99/MR-IQA-2) · [Training](docs/training.md) · [Evaluation](docs/evaluation.md)
 
 MR-IQA-2 couples a multimodal Actor, a frozen FLUX.2-klein-4B Editor, and a
 frozen E5 Judge. Masked credit assigns reasoning and rating rewards only to
@@ -154,6 +154,20 @@ resume rules are in [docs/evaluation.md](docs/evaluation.md).
 ```bash
 bash scripts/test_release.sh --static
 bash scripts/test_release.sh
+```
+
+## Citation
+
+```bibtex
+@misc{li2026mriqa2,
+  title={MR-IQA-2: Faithful Image Quality Reflection via Fine-Grained Credit Assignment},
+  author={Yuan Li and Youyuan Lin and Chenhui Chu and Shin'ya Nishida},
+  year={2026},
+  eprint={2608.18579},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV},
+  url={https://arxiv.org/abs/2608.18579}
+}
 ```
 
 ## License

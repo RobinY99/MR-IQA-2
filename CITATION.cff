@@ -1,17 +1,39 @@
 cff-version: 1.2.0
-message: "If you use MR-IQA-2, please cite this software release."
-title: "MR-IQA-2: Masked Credit Assignment for Visual Quality Reasoning"
+message: "If you use MR-IQA-2, please cite the paper below."
+title: "MR-IQA-2: Faithful Image Quality Reflection via Fine-Grained Credit Assignment"
 type: software
 version: 0.1.0
 date-released: 2026-08-10
 license: MIT
 authors:
-  - name: "MR-IQA-2 Contributors"
+  - family-names: "Li"
+    given-names: "Yuan"
+  - family-names: "Lin"
+    given-names: "Youyuan"
+  - family-names: "Chu"
+    given-names: "Chenhui"
+  - family-names: "Nishida"
+    given-names: "Shin'ya"
 repository-code: "https://github.com/RobinY99/MR-IQA-2"
-url: "https://github.com/RobinY99/MR-IQA-2"
+url: "https://arxiv.org/abs/2608.18579"
 keywords:
   - image quality assessment
   - visual reasoning
   - reinforcement learning
   - credit assignment
   - multimodal learning
+preferred-citation:
+  type: article
+  title: "MR-IQA-2: Faithful Image Quality Reflection via Fine-Grained Credit Assignment"
+  authors:
+    - family-names: "Li"
+      given-names: "Yuan"
+    - family-names: "Lin"
+      given-names: "Youyuan"
+    - family-names: "Chu"
+      given-names: "Chenhui"
+    - family-names: "Nishida"
+      given-names: "Shin'ya"
+  year: 2026
+  journal: "arXiv"
+  url: "https://arxiv.org/abs/2608.18579"
