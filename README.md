@@ -2,6 +2,8 @@
 
 [Paper](https://arxiv.org/abs/2608.18579) · [Model weights](https://huggingface.co/RobinY99/MR-IQA-2) · [Training](docs/training.md) · [Evaluation](docs/evaluation.md)
 
+We thank [@apolinario](https://github.com/apolinario) for building a [demo for MR-IQA-2](https://huggingface.co/spaces/hugging-apps/mr-iqa-2-demo).
+
 MR-IQA-2 couples a multimodal Actor, a frozen FLUX.2-klein-4B Editor, and a
 frozen E5 Judge. Masked credit assigns reasoning and rating rewards only to
 their eligible completion tokens.
