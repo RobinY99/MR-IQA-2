@@ -1,4 +1,4 @@
-<h1><img src="assets/logo.png" alt="MR-IQA-2 logo" width="42" align="absmiddle"> MR-IQA-2: Masked Credit Assignment for Visual Quality Reasoning</h1>
+<h1><img src="assets/logo.png" alt="MR-IQA-2 logo" width="42" align="absmiddle"> MR-IQA-2: Faithful Image Quality Reflection via Fine-Grained Credit Assignment</h1>
 
 [Paper](https://arxiv.org/abs/2608.18579) · [Model weights](https://huggingface.co/RobinY99/MR-IQA-2) · [Training](docs/training.md) · [Evaluation](docs/evaluation.md)
 
